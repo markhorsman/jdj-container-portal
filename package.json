@@ -5,10 +5,16 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "rebuild": "electron-rebuild -f -w nfc-pcsc",
+    "lint": "vue-cli-service lint",
+    "electron:build": "vue-cli-service electron:build",
+    "electron:serve": "vue-cli-service electron:serve",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "core-js": "^2.6.5",
+    "nfc-pcsc": "^0.6.2",
     "vue": "^2.6.10"
   },
   "devDependencies": {
@@ -18,6 +24,9 @@
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.0.0",
+    "electron": "^3.0.0",
+    "electron-rebuild": "^1.8.5",
+    "vue-cli-plugin-electron-builder": "^1.0.0-rc.11",
     "vue-template-compiler": "^2.6.10"
   },
   "eslintConfig": {
@@ -42,5 +51,6 @@
   "browserslist": [
     "> 1%",
     "last 2 versions"
-  ]
+  ],
+  "main": "background.js"
 }
