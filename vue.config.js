@@ -2,11 +2,20 @@
 module.exports = {
   pluginOptions: {
     electronBuilder: {
-      // List native deps here if they don't work
-      externals: ['nfc-pcsc'],
-      // If you are using Yarn Workspaces, you may have multiple node_modules folders
-      // List them all here so that VCP Electron Builder can find them
-      nodeModulesPath: ['../../node_modules', './node_modules']
+      externals: [
+        'nfc-pcsc'
+      ],
+      nodeModulesPath: [
+        '../../node_modules',
+        './node_modules'
+      ]
+    },
+    quasar: {
+      treeShake: true
     }
-  }
+  },
+
+  transpileDependencies: [
+    /[\\\/]node_modules[\\\/]quasar[\\\/]/
+  ]
 }

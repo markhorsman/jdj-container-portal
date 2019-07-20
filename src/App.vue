@@ -1,18 +1,15 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png">
-    <Reader/>
+    <img alt="Vue logo" width="200" src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png">
+     <router-view/>
   </div>
 </template>
 
 <script>
-import Reader from './components/Reader.vue'
+
 
 export default {
-  name: 'app',
-  components: {
-    Reader
-  }
+  name: 'app'
 }
 </script>
 
