@@ -79,7 +79,7 @@ export default {
     },
     getProduct: function() {
       this.loading = true;
-      this.axios
+      this.$api
         .get(
           `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE`
         )

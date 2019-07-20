@@ -74,7 +74,7 @@ export default {
   },
   methods: {
     getCustomer: function() {
-      this.axios
+      this.$api
         .get(
           `${this.$config.api_base_url}/customers?api_key=${
             this.$store.state.api_key

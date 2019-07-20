@@ -24,6 +24,7 @@ import {
   QCard,
   QSpinnerHourglass,
   QInput,
+  QForm,
 } from 'quasar'
 
 Vue.use(Quasar, {
@@ -47,6 +48,7 @@ Vue.use(Quasar, {
     QCard,
     QSpinnerHourglass,
     QInput,
+    QForm,
   },
   directives: {
   },

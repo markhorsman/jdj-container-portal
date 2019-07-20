@@ -19,8 +19,9 @@
     "nfc-pcsc": "^0.6.2",
     "quasar": "^1.0.0",
     "vue": "^2.6.10",
-    "vue-axios": "^2.1.4",
+    "vue-progressbar": "^0.7.5",
     "vue-router": "^3.0.7",
+    "vuelidate": "^0.7.4",
     "vuex": "^3.1.1"
   },
   "devDependencies": {
