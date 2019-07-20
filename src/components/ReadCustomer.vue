@@ -1,12 +1,9 @@
 <template>
   <div class="row reader">
     <div class="col">
-      <q-btn color="primary" size="size_xl" label="Terug naar begin" @click="$router.replace('/')"></q-btn>
-      <br />
-      <br />
-      <p v-if="!uid && readerName">{{ UIDMsg }}</p>
+      <p v-if="!uid && readerName">Plaats de kaart van de klant op de RFID reader.</p>
       <q-space />
-      <p v-if="!readerName">{{ readerMsg }}</p>
+      <p v-if="!readerName">Sluit een RFID reader aan via een van de USB poorten</p>
       <q-space />
       <p v-if="uid">UID: {{ uid }}</p>
 
@@ -25,8 +22,6 @@ export default {
       readers: null,
       devices: null,
       readerName: null,
-      UIDMsg: "Plaats een keycard op de reader.",
-      readerMsg: "Sluit een RFID reader aan via een van de USB poorten",
       uid: null,
       customer: this.$store.customer || null
     };

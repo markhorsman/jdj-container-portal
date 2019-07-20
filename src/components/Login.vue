@@ -6,7 +6,7 @@
           filled
           v-model="$v.username.$model"
           id="username"
-          :class="status($v.username)"
+          :rules="[val => !!val || 'Gebruikersnaam is verplicht']"
           label="Gebruikersnaam"
         />
         <q-input
@@ -15,7 +15,7 @@
           filled
           :type="isPwd ? 'password' : 'text'"
           hint="Wachtwoord"
-          :class="status($v.password)"
+          :rules="[val => !!val || 'Wachtwoord is verplicht']"
         >
           <template v-slot:append>
             <q-icon

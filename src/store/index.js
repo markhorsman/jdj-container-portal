@@ -10,6 +10,7 @@ export default new Vuex.Store({
         api_key: localStorage.getItem('api_key') || null,
         user: (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null),
         customer: null,
+        rentalProducts: [],
     },
     mutations: {
         login(state, data) {
@@ -22,10 +23,14 @@ export default new Vuex.Store({
             state.user = null
             state.api_key = null
             state.customer = null
+            state.rentalProducts = []
             router.push('/login')
         },
         updateCustomer(state, customer) {
             state.customer = customer
+        },
+        updateRentalProducts(state, products) {
+            state.rentalProducts = products
         }
     }
 })

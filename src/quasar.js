@@ -5,7 +5,7 @@ import lang from 'quasar/lang/nl.js'
 import '@quasar/extras/roboto-font/roboto-font.css'
 import '@quasar/extras/material-icons/material-icons.css'
 import {
-  Quasar, 
+  Quasar,
   QLayout,
   QHeader,
   QDrawer,
@@ -25,6 +25,9 @@ import {
   QSpinnerHourglass,
   QInput,
   QForm,
+  QStep,
+  QStepper,
+  QStepperNavigation,
 } from 'quasar'
 
 Vue.use(Quasar, {
@@ -49,10 +52,13 @@ Vue.use(Quasar, {
     QSpinnerHourglass,
     QInput,
     QForm,
+    QStep,
+    QStepper,
+    QStepperNavigation,
   },
   directives: {
   },
   plugins: {
   },
   lang: lang
- })
+})

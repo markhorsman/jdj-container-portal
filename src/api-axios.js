@@ -5,9 +5,6 @@ import store from './store'
 const instance = axios.create();
 
 instance.interceptors.request.use(config => {
-    if (store.state.api_key) console.log(config)
-        // config.headers['Authorization'] = 'Bearer ' + store.state.jwt;
-
     app.$Progress.start(); // for every request start the progress
     return config;
 });
