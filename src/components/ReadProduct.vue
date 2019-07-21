@@ -1,6 +1,8 @@
 <template>
   <div class="qr">
-    <p v-if="!products.length">Voeg producten toe met de barcode scanner door de QR code op het product te scannen.</p>
+    <p
+      v-if="!products.length"
+    >Voeg producten toe met de barcode scanner door de QR code op het product te scannen.</p>
     <br />
     <br />
     <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
@@ -14,7 +16,7 @@
         <q-item-section side top>
           <q-item-label caption>
             <q-input
-			        v-bind:readonly="!!p.UNIQUE"
+              v-bind:readonly="!!p.UNIQUE"
               v-model="p.QTY"
               type="number"
               filled
@@ -23,9 +25,17 @@
           </q-item-label>
         </q-item-section>
 
-		<q-item-section side top>
+        <q-item-section side top>
           <q-item-label caption @click="deleteProduct(index)">
-            <q-btn class="gt-xs" size="15px" style="margin-top: 0.8em" flat dense round icon="delete" />
+            <q-btn
+              class="gt-xs"
+              size="15px"
+              style="margin-top: 0.8em"
+              flat
+              dense
+              round
+              icon="delete"
+            />
           </q-item-label>
         </q-item-section>
       </q-item>
@@ -39,73 +49,67 @@ export default {
     return {
       products: this.$store.state.rentalProducts || [],
       itemnumber: null,
-      loading: false
+      loading: false,
+      code: '',
+      reading: false,
     };
   },
 
-  created() {},
-
   mounted() {
-    this.initKeyboardListener();
+    document.addEventListener("keypress", this.getInput);
   },
 
   methods: {
     deleteProduct: function(index) {
-        this.products.splice(index, 1)
-        this.$store.commit("updateRentalProducts", this.products)
+      this.products.splice(index, 1);
+      this.$store.commit("updateRentalProducts", this.products);
     },
-    initKeyboardListener: function() {
-      let code = ""
-      let reading = false
+    getInput: function(e) {
+      e.stopImmediatePropagation();
+      if (e.keyCode === 13 && this.code.length >= 5) {
+        this.itemnumber = this.code;
+        this.getProduct();
+        this.code = '';
+      } else {
+        this.code += e.key;
+      }
 
-      document.addEventListener("keypress", e => {
-        e.stopImmediatePropagation()
-        if (e.keyCode === 13 && code.length >= 5) {
-          this.itemnumber = code
-          this.getProduct()
-          code = "";
-        } else {
-          code += e.key
-        }
-
-        //run a timeout of 200ms at the first read and clear everything
-
-        if (!reading) {
-          reading = true
-          setTimeout(() => {
-            code = ""
-            reading = false
-          }, 200)
-        }
-      });
+      //run a timeout of 200ms at the first read and clear everything
+      if (!this.reading) {
+        this.reading = true;
+        setTimeout(() => {
+          this.code = '';
+          this.reading = false;
+        }, 200);
+      }
     },
     notifyNotFound: function() {
       this.$notify({
-            group: "api",
-            title: "Product niet gevonden",
-            text: `Product met nummer ${this.itemnumber} niet gevonden.`,
-            type: "error",
-            duration: 5000,
-          });
+        group: "api",
+        title: "Product niet gevonden",
+        text: `Product met nummer ${this.itemnumber} niet gevonden.`,
+        type: "error",
+        duration: 5000
+      });
     },
     getProduct: function() {
-      this.loading = true
+      this.loading = true;
       this.$api
         .get(
           `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE`
         )
         .then(res => {
           if (res && res.data && res.data.length) {
-            const p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO)
+            const p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO);
 
             if (p && !p.UNIQUE) {
               p.QTY = parseInt(p.QTY) + 1;
             } else if (p && p.UNIQUE) {
               // notify?
             } else {
-              this.products.push(Object.assign(res.data[0], { QTY: 1 }))
+              this.products.push(Object.assign(res.data[0], { QTY: 1 }));
             }
-            this.$store.commit("updateRentalProducts", this.products)
+            this.$store.commit("updateRentalProducts", this.products);
           } else {
             this.notifyNotFound();
           }
@@ -117,9 +121,9 @@ export default {
     }
   },
 
-  updated() {},
-
-  destroyed() {}
+  destroyed() {
+    document.removeEventListener("keypress", this.getInput);
+  }
 };
 </script>
 
