@@ -8,6 +8,7 @@
       <p v-if="uid">UID: {{ uid }}</p>
 
       <h3 v-if="customer">{{ customer.NAME }}</h3>
+      <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
     </div>
   </div>
 </template>
@@ -18,6 +19,7 @@ import { NFC } from "nfc-pcsc";
 export default {
   data() {
     return {
+      loading: false,
       nfc: null,
       readers: null,
       devices: null,
@@ -43,8 +45,7 @@ export default {
       this.readerName = reader.name;
 
       reader.on("card", card => {
-        // console.log(`card ${card.uid}`);
-        this.uid = card.uid;
+        this.uid = card.uid.match(/.{1,2}/g).reverse().join('');
         this.getCustomer();
       });
 
@@ -69,18 +70,23 @@ export default {
   },
   methods: {
     getCustomer: function() {
+      this.loading = true;
       this.$api
         .get(
-          `${this.$config.api_base_url}/customers?api_key=${
-            this.$store.state.api_key
-          }&$filter=ACCT eq '${9778}'&fields=RECID,NAME,CONTACT,EMAILINVADDRESS`
+          `${this.$config.container_api_base_url}customercontact/${this.uid}`, { auth: this.$config.container_api_basic_auth }
         )
         .then(res => {
-          if (res && res.data && res.data.length) {
-            this.$store.commit("updateCustomer", res.data[0]);
-            this.customer = res.data[0];
+          if (res && res.data && res.data.data && res.data.data.length) {
+            this.$store.commit("updateCustomer", res.data.data[0]);
+            this.customer = res.data.data[0];
           }
-        });
+        })
+        .catch((e) => {
+
+        })
+        .finally(() => {
+          this.loading = false;
+        })
     }
   },
 

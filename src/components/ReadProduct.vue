@@ -25,7 +25,7 @@
 
 		<q-item-section side top>
           <q-item-label caption @click="deleteProduct(index)">
-            <q-btn class="gt-xs" size="15px" flat dense round icon="delete" />
+            <q-btn class="gt-xs" size="15px" style="margin-top: 0.8em" flat dense round icon="delete" />
           </q-item-label>
         </q-item-section>
       </q-item>
