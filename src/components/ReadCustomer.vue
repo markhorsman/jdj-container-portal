@@ -29,28 +29,25 @@ export default {
     };
   },
 
-  created() {
-    // console.log('created', this);
-  },
+  created() {},
 
   mounted() {
-    // console.log('mounted', this);
-
     this.nfc = new NFC();
     this.readers = new Set();
 
     this.nfc.on("reader", reader => {
-      // console.log(`${reader.name} reader attached, waiting for cards ...`);
       this.readers.add(reader);
       this.readerName = reader.name;
 
       reader.on("card", card => {
-        this.uid = card.uid.match(/.{1,2}/g).reverse().join('');
+        this.uid = card.uid
+          .match(/.{1,2}/g)
+          .reverse()
+          .join("");
         this.getCustomer();
       });
 
       reader.on("card.off", card => {
-        // console.log(`${reader.reader.name}  card removed`, card);
         this.uid = null;
       });
 
@@ -59,40 +56,46 @@ export default {
       });
 
       reader.on("end", () => {
-        // console.log(`${reader.name} reader disconnected.`);
         this.readerName = null;
       });
     });
 
-    this.nfc.on("error", err => {
-    //   console.error(err);
-    });
+    this.nfc.on("error", err => {});
   },
   methods: {
+    notifyNotFound: function() {
+      this.$notify({
+        group: "api",
+        title: "Klant niet gevonden",
+        text: `Klant met identifier ${this.uid} niet gevonden.`,
+        type: "error"
+      });
+    },
     getCustomer: function() {
       this.loading = true;
       this.$api
         .get(
-          `${this.$config.container_api_base_url}customercontact/${this.uid}`, { auth: this.$config.container_api_basic_auth }
+          `${this.$config.container_api_base_url}customercontact/${this.uid}`,
+          { auth: this.$config.container_api_basic_auth }
         )
         .then(res => {
           if (res && res.data && res.data.data && res.data.data.length) {
             this.$store.commit("updateCustomer", res.data.data[0]);
             this.customer = res.data.data[0];
+          } else {
+            this.notifyNotFound();
           }
         })
-        .catch((e) => {
-
+        .catch(() => {
+          this.notifyNotFound();
         })
         .finally(() => {
           this.loading = false;
-        })
+        });
     }
   },
 
-  updated() {
-    // console.log('updated', this);
-  },
+  updated() {},
 
   destroyed() {
     // stops listening for new readers

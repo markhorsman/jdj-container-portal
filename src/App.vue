@@ -1,5 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
+    <notifications group="api" position="top center"/>
     <q-header elevated>
       <q-toolbar>
         <q-btn

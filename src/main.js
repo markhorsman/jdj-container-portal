@@ -2,6 +2,7 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import VueProgressBar from 'vue-progressbar'
+import Notifications from 'vue-notification'
 import Vuelidate from 'vuelidate'
 import './quasar'
 
@@ -22,6 +23,7 @@ Vue.use(VueProgressBar, {
 })
 
 Vue.use(Vuelidate)
+Vue.use(Notifications)
 
 Vue.config.productionTip = false
 

@@ -14,7 +14,7 @@
         <q-item-section side top>
           <q-item-label caption>
             <q-input
-			  v-bind:readonly="!!p.UNIQUE"
+			        v-bind:readonly="!!p.UNIQUE"
               v-model="p.QTY"
               type="number"
               filled
@@ -79,6 +79,15 @@ export default {
         }
       });
     },
+    notifyNotFound: function() {
+      this.$notify({
+            group: "api",
+            title: "Product niet gevonden",
+            text: `Product met nummer ${this.itemnumber} niet gevonden.`,
+            type: "error",
+            duration: 5000,
+          });
+    },
     getProduct: function() {
       this.loading = true
       this.$api
@@ -97,16 +106,18 @@ export default {
               this.products.push(Object.assign(res.data[0], { QTY: 1 }))
             }
             this.$store.commit("updateRentalProducts", this.products)
+          } else {
+            this.notifyNotFound();
           }
         })
-        .catch(e => console.log)
+        .catch(() => {
+          this.notifyNotFound();
+        })
         .finally(() => (this.loading = false));
     }
   },
 
-  updated() {
-    // console.log('updated', this);
-  },
+  updated() {},
 
   destroyed() {}
 };
