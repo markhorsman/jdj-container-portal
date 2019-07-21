@@ -27,6 +27,34 @@ Vue.config.productionTip = false
 
 export default new Vue({
   el: '#app',
+  data: {
+    refreshing: false,
+    interval: null,
+    refresh: 5 * 60 * 1000, // 5 minutes
+  },
+  methods: {
+    refreshSession: function () {
+      if (!this.$store.state.api_key || this.refreshing) return;
+      this.refreshing = true;
+      this.$api
+        .get(
+          `${this.$config.api_base_url}users?api_key=${this.$store.state.api_key}`
+        )
+        .finally(() => {
+          this.refreshing = false;
+        })
+    }
+  },
+  mounted() {
+    this.refreshSession();
+
+    this.interval = setInterval(function () {
+      this.refreshSession();
+    }.bind(this), this.refresh);
+  },
+  destroyed() {
+    if (this.interval) clearInterval(this.interval);
+  },
   render: h => h(App),
   router,
   store,
