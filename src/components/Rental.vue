@@ -5,11 +5,44 @@
         <ReadCustomer />
       </q-step>
 
-      <q-step :name="2" title="Producten scannen" icon="build" :done="step > 2">
+      <q-step :name="2" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 2">
+        <q-btn-toggle
+          v-model="rentalType"
+          push
+          rounded
+          glossy
+          toggle-color="primary"
+          :options="[
+          {value: 'pickup', slot: 'pickup'},
+          {value: 'return', slot: 'return'},
+        ]"
+        >
+          <template v-slot:pickup>
+            <div class="row items-center no-wrap">
+              <div class="text-center">Producten ophalen (in huur)</div>
+            </div>
+          </template>
+
+          <template v-slot:return>
+            <div class="row items-center no-wrap">
+              <div class="text-center">Producten terugbrengen (uit huur)</div>
+            </div>
+          </template>
+        </q-btn-toggle>
+        <br />
+        <br />
+      </q-step>
+
+      <q-step :name="3" title="Producten scannen" icon="build" :done="step > 3">
         <ReadProduct />
       </q-step>
 
-      <q-step :name="3" title="Controleren" icon="playlist_add_check" :done="step > 3">
+      <q-step
+        :name="4"
+        title="Controleren en bevestigen"
+        icon="playlist_add_check"
+        :done="step > 4"
+      >
         <p>Controleer de lijst met producten.</p>
         <q-list bordered separator>
           <q-item
@@ -22,27 +55,24 @@
               <q-item-label caption lines="2">{{ p.DESC1 }}</q-item-label>
             </q-item-section>
 
-            <q-item-section side top>
+            <q-item-section side bottom>
               <q-item-label caption>{{ p.QTY }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-list>
-      </q-step>
-
-      <q-step :name="4" title="Bevestigen" icon="send">
-        Bevestig de gekozen producten door op onderstaande knop te drukken.
+        <br />
+        <br />Bevestig de gekozen producten door op onderstaande knop te drukken.
         <br />
         <br />
         <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
       </q-step>
-
       <template v-slot:navigation>
         <q-stepper-navigation>
           <q-btn
-            @click="step === 4 ? addItemsToContract() : $refs.stepper.next()"
+            @click="step === 4 ? (rentalType === 'return' ? removeItemsFromContract() : addItemsToContract()) : $refs.stepper.next()"
             color="primary"
             :label="step === 4 ? 'Bevestigen' : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasProducts) || loading"
+            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts) || loading"
           />
           <q-btn
             v-if="step > 1"
@@ -88,13 +118,29 @@ export default {
   methods: {
     cancel: function() {
       this.$store.commit("updateRentalProducts", []);
+      this.$store.commit("updateCustomer", null);
       this.$router.push("/");
+    },
+    updateItemRequest: async function(recid, status) {
+      let result;
+      try {
+        result = await this.$api.put(
+          `${this.$config.container_api_base_url}contitem/${encodeURIComponent(
+            recid
+          )}/${status}`,
+          {},
+          { auth: this.$config.container_api_basic_auth }
+        );
+      } catch (e) {
+        result = e;
+      }
+      return result;
     },
     createItemRequest: async function(item) {
       let result;
       try {
         result = await this.$api.post(
-          `${this.$config.api_base_url}/contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`,
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`,
           item
         );
       } catch (e) {
@@ -106,13 +152,82 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}/contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`
         );
       } catch (e) {
         result = null;
       }
       return result;
     },
+    getContractItems: async function() {
+      let result;
+      try {
+        result = await this.$api.get(
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`
+        );
+      } catch (e) {
+        result = null;
+      }
+      return result;
+    },
+
+    removeItemsFromContract: async function() {
+      this.loading = true;
+      const res = await this.getContractItems();
+      const items = res.data;
+      if (!items || !items.length) {
+        // TODO: notify user
+        return;
+      }
+
+      const products = [];
+      this.$store.state.rentalProducts.forEach(p => {
+        const match = items.find(obj => obj.ITEMNO === p.ITEMNO);
+        if (match) products.push(match.RECID);
+      });
+
+      const requests = products.map(
+        async id => await this.updateItemRequest(id, 2)
+      );
+      const results = await Promise.all(requests);
+      this.loading = false;
+      let failed = 0;
+
+      results.forEach(r => {
+        if (!r || r.status > 201) {
+          failed++;
+          if (r.data && r.data.Message) {
+            console.log(r);
+            // const body = JSON.parse(r.config.data);
+
+            this.$notify({
+              group: "api",
+              title: `Product niet verwijderd`,
+              text: r.data.Message,
+              type: "error",
+              duration: 5000
+            });
+          }
+        }
+      });
+
+      // TODO: update status property of damaged stock items
+
+      if (!failed) {
+        this.$store.commit("updateRentalProducts", []);
+        this.$store.commit("updateCustomer", null);
+        this.$notify({
+          group: "api",
+          title: "Contract items aangepast",
+          text: `Er zijn ${results.length -
+            failed} contract items uit huur gehaald.`,
+          type: "success",
+          duration: 5000
+        });
+        this.$router.push("/");
+      }
+    },
+
     addItemsToContract: async function() {
       this.loading = true;
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -142,6 +257,7 @@ export default {
       const results = await Promise.all(requests);
       this.loading = false;
       let failed = 0;
+      const products = [];
 
       results.forEach(r => {
         if (!r || r.status > 201) {
@@ -157,15 +273,24 @@ export default {
               duration: 5000
             });
           }
+        } else {
+          products.push(r.data.RECID);
         }
       });
 
       if (!failed) {
+        const updateRequests = products.map(
+          async id => await this.updateItemRequest(id, 1)
+        );
+
+        const updates = await Promise.all(updateRequests);
+
         this.$store.commit("updateRentalProducts", []);
+        this.$store.commit("updateCustomer", null);
         this.$notify({
           group: "api",
           title: "Contract items toegevoegd",
-          text: `Er zijn ${results.length} contract items toegevoegd.`,
+          text: `Er zijn ${results.length - failed} contract items toegevoegd.`,
           type: "success",
           duration: 5000
         });
@@ -176,7 +301,8 @@ export default {
   data() {
     return {
       step: 1,
-      loading: false
+      loading: false,
+      rentalType: "pickup"
     };
   }
 };

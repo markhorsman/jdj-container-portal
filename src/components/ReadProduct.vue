@@ -7,10 +7,21 @@
     <br />
     <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
     <q-list bordered separator>
-      <q-item v-for="(p, index) in products" clickable v-bind:key="index">
+      <q-item v-for="(p, index) in products" v-bind:key="index">
         <q-item-section>
-          <q-item-label>{{ p.ITEMNO }}</q-item-label>
+          <q-item-label>
+            {{ p.ITEMNO }}
+            <q-chip dense>
+              <q-avatar color="primary" text-color="white">{{ p.STKLEVEL }}</q-avatar>Stock
+            </q-chip>
+          </q-item-label>
           <q-item-label caption lines="2">{{ p.DESC1 }}</q-item-label>
+        </q-item-section>
+
+        <q-item-section v-if="isRentalTypeReturn" side bottom>
+          <q-item-label caption>
+            <q-checkbox keep-color v-model="p.DAMAGED" label="Product is beschadigd?" color="red" />
+          </q-item-label>
         </q-item-section>
 
         <q-item-section side top>
@@ -19,18 +30,17 @@
               v-bind:readonly="!!p.UNIQUE"
               v-model="p.QTY"
               type="number"
-              filled
+              outlined
               style="max-width: 50px"
             />
           </q-item-label>
         </q-item-section>
 
-        <q-item-section side top>
+        <q-item-section side bottom>
           <q-item-label caption @click="deleteProduct(index)">
             <q-btn
               class="gt-xs"
               size="15px"
-              style="margin-top: 0.8em"
               flat
               dense
               round
@@ -50,13 +60,19 @@ export default {
       products: this.$store.state.rentalProducts || [],
       itemnumber: null,
       loading: false,
-      code: '',
-      reading: false,
+      code: "",
+      reading: false
     };
   },
 
   mounted() {
     document.addEventListener("keypress", this.getInput);
+  },
+
+  computed: {
+    isRentalTypeReturn() {
+      return this.$parent.$parent.$parent.rentalType === 'return';
+    }
   },
 
   methods: {
@@ -69,7 +85,7 @@ export default {
       if (e.keyCode === 13 && this.code.length >= 5) {
         this.itemnumber = this.code;
         this.getProduct();
-        this.code = '';
+        this.code = "";
       } else {
         this.code += e.key;
       }
@@ -78,7 +94,7 @@ export default {
       if (!this.reading) {
         this.reading = true;
         setTimeout(() => {
-          this.code = '';
+          this.code = "";
           this.reading = false;
         }, 200);
       }
@@ -96,7 +112,7 @@ export default {
       this.loading = true;
       this.$api
         .get(
-          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE`
+          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL`
         )
         .then(res => {
           if (res && res.data && res.data.length) {
@@ -107,7 +123,9 @@ export default {
             } else if (p && p.UNIQUE) {
               // notify?
             } else {
-              this.products.push(Object.assign(res.data[0], { QTY: 1 }));
+              this.products.push(
+                Object.assign(res.data[0], { QTY: 1, DAMAGED: false })
+              );
             }
             this.$store.commit("updateRentalProducts", this.products);
           } else {

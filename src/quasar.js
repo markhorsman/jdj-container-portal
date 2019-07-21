@@ -28,6 +28,10 @@ import {
   QStep,
   QStepper,
   QStepperNavigation,
+  QChip,
+  QAvatar,
+  QBtnToggle,
+  QCheckbox,
 } from 'quasar'
 
 Vue.use(Quasar, {
@@ -55,6 +59,10 @@ Vue.use(Quasar, {
     QStep,
     QStepper,
     QStepperNavigation,
+    QChip,
+    QAvatar,
+    QBtnToggle,
+    QCheckbox,
   },
   directives: {
   },
