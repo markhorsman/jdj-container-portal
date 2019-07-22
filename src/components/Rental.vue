@@ -69,7 +69,7 @@
       <template v-slot:navigation>
         <q-stepper-navigation>
           <q-btn
-            @click="step === 4 ? (rentalType === 'return' ? removeItemsFromContract() : addItemsToContract()) : $refs.stepper.next()"
+            @click="step === 4 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
             :label="step === 4 ? 'Bevestigen' : 'Volgende'"
             :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts) || loading"
@@ -101,6 +101,12 @@ import ReadCustomer from "./ReadCustomer.vue";
 import ReadProduct from "./ReadProduct.vue";
 import { request } from "http";
 
+const CONTITEM_IN_RENT_STATUS = 1;
+const CONTITEM_FROM_RENT_STATUS = 2;
+const STOCK_IN_RENT_STATUS = 1;
+const STOCK_AVAILABLE_STATUS = 0;
+const STOCK_IN_REPAIR_STATUS = 2;
+
 export default {
   name: "Rental",
   components: {
@@ -121,7 +127,7 @@ export default {
       this.$store.commit("updateCustomer", null);
       this.$router.push("/");
     },
-    updateItemRequest: async function(recid, status) {
+    updateContItemRequest: async function(recid, status) {
       let result;
       try {
         result = await this.$api.put(
@@ -136,7 +142,22 @@ export default {
       }
       return result;
     },
-    createItemRequest: async function(item) {
+    updateStockRequest: async function(recid, status, quantity, type) {
+      let result;
+      try {
+        result = await this.$api.put(
+          `${this.$config.container_api_base_url}stock/${encodeURIComponent(
+            recid
+          )}/${status}/${quantity}/${type}`,
+          {},
+          { auth: this.$config.container_api_basic_auth }
+        );
+      } catch (e) {
+        result = e;
+      }
+      return result;
+    },
+    createContItemRequest: async function(item) {
       let result;
       try {
         result = await this.$api.post(
@@ -171,95 +192,163 @@ export default {
       return result;
     },
 
-    removeItemsFromContract: async function() {
+    returnItems: async function() {
+      if (
+        !this.$store.state.rentalProducts ||
+        !this.$store.state.rentalProducts.length ||
+        !this.$store.state.customer
+      )
+        return;
+
       this.loading = true;
-      const res = await this.getContractItems();
-      const items = res.data;
+      const products = [];
+      let failed = 0;
+
+      const response = await this.getContractItems();
+      const items = response.data;
+
       if (!items || !items.length) {
-        // TODO: notify user
+        this.$notify({
+          group: "api",
+          title: `Contract artikelen niet gevonden.`,
+          text: `Artikelen van contract (${this.$config.default_contract_number}) niet gevonden`,
+          type: "error",
+          duration: 5000
+        });
         return;
       }
 
-      const products = [];
       this.$store.state.rentalProducts.forEach(p => {
         const match = items.find(obj => obj.ITEMNO === p.ITEMNO);
-        if (match) products.push(match.RECID);
+        if (match) products.push(match);
       });
 
-      const requests = products.map(
-        async id => await this.updateItemRequest(id, 2)
-      );
-      const results = await Promise.all(requests);
-      this.loading = false;
-      let failed = 0;
+      if (!products.length) {
+        this.$notify({
+          group: "api",
+          title: `Geen match met producten.`,
+          text: `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`,
+          type: "error",
+          duration: 5000
+        });
+        return;
+      }
 
-      results.forEach(r => {
+      const updateContItemRequests = products.map(
+        async p =>
+          await this.updateContItemRequest(p.id, CONTITEM_FROM_RENT_STATUS)
+      );
+
+      const contItemUpdates = await Promise.all(updateContItemRequests);
+
+      contItemUpdates.forEach(r => {
         if (!r || r.status > 201) {
           failed++;
-          if (r.data && r.data.Message) {
-            console.log(r);
-            // const body = JSON.parse(r.config.data);
-
-            this.$notify({
-              group: "api",
-              title: `Product niet verwijderd`,
-              text: r.data.Message,
-              type: "error",
-              duration: 5000
-            });
-          }
+          console.log(r);
+          this.$notify({
+            group: "api",
+            title: `Product niet uit huur gehaald`,
+            text: "", // TODO: add message from result
+            type: "error",
+            duration: 5000
+          });
         }
       });
 
-      // TODO: update status property of damaged stock items
-
-      if (!failed) {
-        this.$store.commit("updateRentalProducts", []);
-        this.$store.commit("updateCustomer", null);
-        this.$notify({
-          group: "api",
-          title: "Contract items aangepast",
-          text: `Er zijn ${results.length -
-            failed} contract items uit huur gehaald.`,
-          type: "success",
-          duration: 5000
-        });
-        this.$router.push("/");
+      // all failed
+      if (failed && failed === products.length) {
+        this.loading = false;
+        return;
       }
+
+      const updateStockRequests = products.map(
+        async p =>
+          await this.updateStockRequest(
+            p.id,
+            p.DAMAGED && p.UNIQUE ? STOCK_IN_REPAIR_STATUS : (p.UNIQUE ? STOCK_AVAILABLE_STATUS : p.STATUS),
+            p.QTY,
+            "substract"
+          )
+      );
+
+      const stockUpdates = await Promise.all(updateStockRequests);
+
+      // TODO: notify if one or more stock updates failed?
+
+      this.$store.commit("updateRentalProducts", []);
+      this.$store.commit("updateCustomer", null);
+
+      this.loading = false;
+
+      this.$notify({
+        group: "api",
+        title: "Contract items",
+        text: `Er zijn ${contItemUpdates.length -
+          failed} contract items uit huur gehaald.`,
+        type: "success",
+        duration: 5000
+      });
+      this.$router.push("/");
     },
 
-    addItemsToContract: async function() {
+    rentItems: async function() {
+      if (
+        !this.$store.state.rentalProducts ||
+        !this.$store.state.rentalProducts.length ||
+        !this.$store.state.customer
+      )
+        return;
+
+      let failed = 0;
+      const products = [];
+      const stockItems = [];
       this.loading = true;
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
 
       const res = await this.getContract();
       const contract = res.data;
       if (!contract) {
-        // TODO: notify user
+        this.$notify({
+          group: "api",
+          title: `Contract niet gevonden.`,
+          text: `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`,
+          type: "error",
+          duration: 5000
+        });
         return;
       }
 
-      const estretd = moment(contract.ESTRETD).format("YYYY-MM-DD HH:mm:ss");
-
-      const requests = this.$store.state.rentalProducts.map(async p => {
-        return await this.createItemRequest({
-          Itemno: p.ITEMNO,
-          Qty: p.QTY,
-          Sellingprice: 0,
-          Istextitem: 0,
-          Memo: this.$store.state.customer.NAME,
-          Deldate: d,
-          Hiredate: d,
-          Estretd: estretd
+      const m = moment(contract.ESTRETD);
+      if (!m || !m.isValid()) {
+        this.$notify({
+          group: "api",
+          title: `Ongeldige datum.`,
+          text: `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`,
+          type: "error",
+          duration: 5000
         });
-      });
+      }
 
-      const results = await Promise.all(requests);
-      this.loading = false;
-      let failed = 0;
-      const products = [];
+      const estretd = m.format("YYYY-MM-DD HH:mm:ss");
 
-      results.forEach(r => {
+      const createContItemRequests = this.$store.state.rentalProducts.map(
+        async p => {
+          return await this.createContItemRequest({
+            Itemno: p.ITEMNO,
+            Qty: p.QTY,
+            Sellingprice: 0,
+            Istextitem: 0,
+            Memo: this.$store.state.customer.NAME,
+            Deldate: d,
+            Hiredate: d,
+            Estretd: estretd
+          });
+        }
+      );
+
+      const contItemResults = await Promise.all(createContItemRequests);
+
+      contItemResults.forEach(r => {
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
@@ -267,7 +356,7 @@ export default {
 
             this.$notify({
               group: "api",
-              title: `${body.Itemno} niet toegevoegd`,
+              title: `${body.Itemno} niet toegevoegd aan contract`,
               text: r.data.Message,
               type: "error",
               duration: 5000
@@ -275,27 +364,56 @@ export default {
           }
         } else {
           products.push(r.data.RECID);
+
+          // we need the status and quantity of the stock item
+          const stock = this.$store.state.rentalProducts.find(
+            p => p.ITEMNO === r.data.ITEMNO
+          );
+          if (stock) stockItems.push(stock);
         }
       });
 
-      if (!failed) {
-        const updateRequests = products.map(
-          async id => await this.updateItemRequest(id, 1)
-        );
+      // update contitem status (Insphire API does not do this for us)
+      const updateContItemRequests = products.map(
+        async id =>
+          await this.updateContItemRequest(id, CONTITEM_IN_RENT_STATUS)
+      );
 
-        const updates = await Promise.all(updateRequests);
+      // update stock status and quantity (Insphire API does not do this for us)
+      const updateStockRequests = stockItems.map(
+        async s =>
+          await this.updateStockRequest(
+            s.RECID,
+            (s.UNIQUE ? STOCK_IN_RENT_STATUS : s.STATUS),
+            s.QTY,
+            "add"
+          )
+      );
 
-        this.$store.commit("updateRentalProducts", []);
-        this.$store.commit("updateCustomer", null);
-        this.$notify({
-          group: "api",
-          title: "Contract items toegevoegd",
-          text: `Er zijn ${results.length - failed} contract items toegevoegd.`,
-          type: "success",
-          duration: 5000
-        });
-        this.$router.push("/");
+      // get responses of update requests
+      const contItemUpdates = await Promise.all(updateContItemRequests);
+      const stockUpdates = await Promise.all(updateStockRequests);
+
+      if (failed) {
+        this.loading = false;
+        return;
       }
+
+      // TODO: notify if one or more updates failed?
+
+      this.$store.commit("updateRentalProducts", []);
+      this.$store.commit("updateCustomer", null);
+
+      this.loading = false;
+
+      this.$notify({
+        group: "api",
+        title: "Contract items toegevoegd",
+        text: `Er zijn ${contItemResults.length - failed} contract items toegevoegd.`,
+        type: "success",
+        duration: 5000
+      });
+      this.$router.push("/");
     }
   },
   data() {
