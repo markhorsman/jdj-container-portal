@@ -18,16 +18,47 @@
           <q-item-label caption lines="2">{{ p.DESC1 }}</q-item-label>
         </q-item-section>
 
-        <q-item-section v-if="isRentalTypeReturn" side bottom>
+        <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
           <q-item-label caption>
-            <q-checkbox keep-color v-model="p.DAMAGED" label="Product is beschadigd?" color="red" />
+            <q-input
+              v-model="p.QTYDAM"
+              type="number"
+              filled
+              hint="Besch."
+              style="max-width: 75px"
+            />
+            <!-- <q-checkbox keep-color v-model="p.DAMAGED" label="Beschadigd?" color="red" />
+            <q-checkbox keep-color v-model="p.LOST" label="Vermist?" color="red" /> -->
           </q-item-label>
         </q-item-section>
 
-        <q-item-section side bottom>
+         <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
+          <q-item-label caption>
+            <q-input
+              v-model="p.QTYLOST"
+              type="number"
+              filled
+              hint="Verm."
+              style="max-width: 75px"
+            />
+          </q-item-label>
+        </q-item-section>
+
+        <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
+          <q-item-label caption>
+            <q-input
+              v-model="p.QTYOK"
+              type="number"
+              filled
+              hint="OK"
+              style="max-width: 75px"
+            />
+          </q-item-label>
+        </q-item-section>
+
+        <q-item-section v-if="!p.UNIQUE && !isRentalTypeReturn" side bottom>
           <q-item-label caption>
             <q-btn
-              v-if="!p.UNIQUE"
               round
               color="primary"
               icon="add"
@@ -35,7 +66,6 @@
               style="margin-right: 10px;"
             />
             <q-btn
-              v-if="!p.UNIQUE"
               round
               color="primary"
               icon="remove"
@@ -141,7 +171,7 @@ export default {
               // notify?
             } else {
               this.products.push(
-                Object.assign(res.data[0], { QTY: 1, DAMAGED: false })
+                Object.assign(res.data[0], { QTY: 1, QTYDAM: 0, QTYLOST: 0, QTYOK: 1 })
               );
             }
             this.$store.commit("updateRentalProducts", this.products);
