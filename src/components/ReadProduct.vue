@@ -6,7 +6,7 @@
     <br />
     <br />
     <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
-    <q-list bordered separator>
+    <q-list v-if="products.length" bordered separator>
       <q-item v-for="(p, index) in products" v-bind:key="index">
         <q-item-section>
           <q-item-label>
@@ -24,28 +24,33 @@
           </q-item-label>
         </q-item-section>
 
-        <q-item-section side top>
+        <q-item-section side bottom>
           <q-item-label caption>
-            <q-input
-              v-bind:readonly="!!p.UNIQUE"
-              v-model="p.QTY"
-              type="number"
-              outlined
-              style="max-width: 50px"
+            <q-btn
+              v-if="!p.UNIQUE"
+              round
+              color="primary"
+              icon="add"
+              @click="incrementQty(index)"
+              style="margin-right: 10px;"
+            />
+            <q-btn
+              v-if="!p.UNIQUE"
+              round
+              color="primary"
+              icon="remove"
+              @click="decrementQty(index)"
             />
           </q-item-label>
         </q-item-section>
 
         <q-item-section side bottom>
+          <q-item-label caption @click="deleteProduct(index)">{{ p.QTY }}</q-item-label>
+        </q-item-section>
+
+        <q-item-section side bottom>
           <q-item-label caption @click="deleteProduct(index)">
-            <q-btn
-              class="gt-xs"
-              size="15px"
-              flat
-              dense
-              round
-              icon="delete"
-            />
+            <q-btn class="gt-xs" size="15px" flat dense round icon="delete" />
           </q-item-label>
         </q-item-section>
       </q-item>
@@ -71,15 +76,27 @@ export default {
 
   computed: {
     isRentalTypeReturn() {
-      return this.$parent.$parent.$parent.rentalType === 'return';
+      return this.$parent.$parent.$parent.rentalType === "return";
     }
   },
 
   methods: {
+    incrementQty: function(index) {
+      this.products[index].QTY++;
+      this.$store.commit("updateRentalProducts", this.products);
+    },
+
+    decrementQty: function(index) {
+      if (this.products[index].QTY === 1) return;
+      this.products[index].QTY--;
+      this.$store.commit("updateRentalProducts", this.products);
+    },
+
     deleteProduct: function(index) {
       this.products.splice(index, 1);
       this.$store.commit("updateRentalProducts", this.products);
     },
+
     getInput: function(e) {
       e.stopImmediatePropagation();
       if (e.keyCode === 13 && this.code.length >= 5) {

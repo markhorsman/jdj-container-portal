@@ -35,6 +35,7 @@
 
       <q-step :name="3" title="Producten scannen" icon="build" :done="step > 3">
         <ReadProduct />
+        <ContractItems v-if="rentalType === 'return'" />
       </q-step>
 
       <q-step
@@ -99,6 +100,7 @@
 import moment from "moment";
 import ReadCustomer from "./ReadCustomer.vue";
 import ReadProduct from "./ReadProduct.vue";
+import ContractItems from "./ContractItems.vue";
 import { request } from "http";
 
 const CONTITEM_IN_RENT_STATUS = 1;
@@ -111,7 +113,8 @@ export default {
   name: "Rental",
   components: {
     ReadCustomer,
-    ReadProduct
+    ReadProduct,
+    ContractItems,
   },
   computed: {
     hasCustomer() {
@@ -127,6 +130,7 @@ export default {
       this.$store.commit("updateCustomer", null);
       this.$router.push("/");
     },
+
     updateContItemRequest: async function(recid, status) {
       let result;
       try {
@@ -142,14 +146,20 @@ export default {
       }
       return result;
     },
-    updateStockRequest: async function(recid, status, quantity, type) {
+
+    updateStockRequest: async function(recid, status, quantity, type, unqiue) {
       let result;
       try {
         result = await this.$api.put(
           `${this.$config.container_api_base_url}stock/${encodeURIComponent(
             recid
-          )}/${status}/${quantity}/${type}`,
-          {},
+          )}`,
+          {
+            status,
+            quantity,
+            type,
+            unqiue
+          },
           { auth: this.$config.container_api_basic_auth }
         );
       } catch (e) {
@@ -157,6 +167,7 @@ export default {
       }
       return result;
     },
+
     createContItemRequest: async function(item) {
       let result;
       try {
@@ -169,6 +180,39 @@ export default {
       }
       return result;
     },
+
+    deliverContractItem: async function(recid) {
+      let result;
+      try {
+        result = await this.$api.post(
+          `${this.$config.api_base_url}contractitems/${encodeURIComponent(
+            recid
+          )}/deliver?api_key=${this.$store.state.api_key}`,
+          {
+            'DOCNO#2': 0
+          }
+        );
+      } catch (e) {
+        result = e;
+      }
+      return result;
+    },
+
+    offhireContractItem: async function(recid, item) {
+      let result;
+      try {
+        result = await this.$api.post(
+          `${this.$config.api_base_url}contractitems/${encodeURIComponent(
+            recid
+          )}/offhire?api_key=${this.$store.state.api_key}`,
+          Object.assign(item, { Qtyok: 1, Qtydam: 0, Qtylost: 0 })
+        );
+      } catch (e) {
+        result = e;
+      }
+      return result;
+    },
+
     getContract: async function() {
       let result;
       try {
@@ -180,6 +224,7 @@ export default {
       }
       return result;
     },
+
     getContractItems: async function() {
       let result;
       try {
@@ -192,6 +237,15 @@ export default {
       return result;
     },
 
+    removeLocalProductByItemNumber: function(itemnumber) {
+      const products = this.$store.state.rentalProducts;
+      const i = products.map(item => item.ITEMNO === itemnumber);
+
+      // remove object
+      products.splice(i, 1);
+      this.$store.commit("updateRentalProducts", products);
+    },
+
     returnItems: async function() {
       if (
         !this.$store.state.rentalProducts ||
@@ -202,6 +256,7 @@ export default {
 
       this.loading = true;
       const products = [];
+      const processed = [];
       let failed = 0;
 
       const response = await this.getContractItems();
@@ -234,26 +289,57 @@ export default {
         return;
       }
 
-      const updateContItemRequests = products.map(
-        async p =>
-          await this.updateContItemRequest(p.id, CONTITEM_FROM_RENT_STATUS)
+      const offhireContItemRequests = products.map(
+        async p => {
+          return await this.offhireContractItem(p.RECID, p);
+        }
       );
 
-      const contItemUpdates = await Promise.all(updateContItemRequests);
+      const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
-      contItemUpdates.forEach(r => {
+      contItemOffhireResults.forEach(r => {
+         console.log(r);
         if (!r || r.status > 201) {
           failed++;
-          console.log(r);
-          this.$notify({
-            group: "api",
-            title: `Product niet uit huur gehaald`,
-            text: "", // TODO: add message from result
-            type: "error",
-            duration: 5000
-          });
+          if (r.data && r.data.Message) {
+            // const body = JSON.parse(r.config.data);
+
+
+            // this.$notify({
+            //   group: "api",
+            //   title: `${body.Itemno} niet toegevoegd aan contract`,
+            //   text: r.data.Message,
+            //   type: "error",
+            //   duration: 5000
+            // });
+          }
         }
       });
+
+      // const updateContItemRequests = products.map(
+      //   async p =>
+      //     await this.updateContItemRequest(p.id, CONTITEM_FROM_RENT_STATUS)
+      // );
+
+      // const contItemUpdates = await Promise.all(updateContItemRequests);
+
+      // contItemUpdates.forEach(r => {
+      //   console.log(r);
+
+      //   if (!r || r.status > 201) {
+      //     failed++;
+      //     this.$notify({
+      //       group: "api",
+      //       title: `Product niet uit huur gehaald`,
+      //       text: "", // TODO: add message from result
+      //       type: "error",
+      //       duration: 5000
+      //     });
+      //   } else {
+      //     // how to get the contitem/stock item?
+      //     // processed.push(products.find(p => r.data)r.data);
+      //   }
+      // });
 
       // all failed
       if (failed && failed === products.length) {
@@ -261,17 +347,25 @@ export default {
         return;
       }
 
-      const updateStockRequests = products.map(
-        async p =>
-          await this.updateStockRequest(
-            p.id,
-            p.DAMAGED && p.UNIQUE ? STOCK_IN_REPAIR_STATUS : (p.UNIQUE ? STOCK_AVAILABLE_STATUS : p.STATUS),
-            p.QTY,
-            "substract"
-          )
-      );
+      // TODO: if one or more failed, and at least one succeeded, remove the succeeded items from store.
 
-      const stockUpdates = await Promise.all(updateStockRequests);
+      // we only want to update the stock items of which the linked contitem has been successfully updated
+      // const updateStockRequests = products.map(
+      //   async p =>
+      //     await this.updateStockRequest(
+      //       p.id,
+      //       p.DAMAGED && p.UNIQUE
+      //         ? STOCK_IN_REPAIR_STATUS
+      //         : p.UNIQUE
+      //         ? STOCK_AVAILABLE_STATUS
+      //         : p.STATUS,
+      //       p.QTY,
+      //       "substract",
+      //       p.UNIQUE
+      //     )
+      // );
+
+      // const stockUpdates = await Promise.all(updateStockRequests);
 
       // TODO: notify if one or more stock updates failed?
 
@@ -283,7 +377,7 @@ export default {
       this.$notify({
         group: "api",
         title: "Contract items",
-        text: `Er zijn ${contItemUpdates.length -
+        text: `Er zijn ${contItemOffhireResults.length -
           failed} contract items uit huur gehaald.`,
         type: "success",
         duration: 5000
@@ -300,6 +394,7 @@ export default {
         return;
 
       let failed = 0;
+      let deliverFailed = 0;
       const products = [];
       const stockItems = [];
       this.loading = true;
@@ -373,6 +468,7 @@ export default {
         }
       });
 
+      /*
       // update contitem status (Insphire API does not do this for us)
       const updateContItemRequests = products.map(
         async id =>
@@ -384,20 +480,55 @@ export default {
         async s =>
           await this.updateStockRequest(
             s.RECID,
-            (s.UNIQUE ? STOCK_IN_RENT_STATUS : s.STATUS),
+            s.UNIQUE ? STOCK_IN_RENT_STATUS : s.STATUS,
             s.QTY,
-            "add"
+            "add",
+            s.UNIQUE
           )
       );
 
       // get responses of update requests
       const contItemUpdates = await Promise.all(updateContItemRequests);
       const stockUpdates = await Promise.all(updateStockRequests);
+      */
 
-      if (failed) {
+      if (failed && failed === contItemResults.length) {
         this.loading = false;
         return;
       }
+
+      const deliverContItemRequests = products.map(
+        async recid => {
+          return await this.deliverContractItem(recid);
+        }
+      );
+
+      const contItemDeliverResults = await Promise.all(deliverContItemRequests);
+
+      contItemDeliverResults.forEach(r => {
+        console.log(r);
+        if (!r || r.status > 201) {
+          deliverFailed++;
+          if (r.data && r.data.Message) {
+            const body = JSON.parse(r.config.data);
+
+            this.$notify({
+              group: "api",
+              title: `${body.Itemno} niet in huur gezet`,
+              text: r.data.Message,
+              type: "error",
+              duration: 5000
+            });
+          }
+        }
+      });
+
+      // remove the ones that succeeded from store
+      // if (failed && stockItems.length) {
+      //   stockItems.forEach(s => {
+      //     this.removeLocalProductByItemNumber(s.ITEMNO);
+      //   });
+      // }
 
       // TODO: notify if one or more updates failed?
 
@@ -409,7 +540,8 @@ export default {
       this.$notify({
         group: "api",
         title: "Contract items toegevoegd",
-        text: `Er zijn ${contItemResults.length - failed} contract items toegevoegd.`,
+        text: `Er zijn ${contItemDeliverResults.length -
+          deliverFailed} contract items in huur gezet.`,
         type: "success",
         duration: 5000
       });
