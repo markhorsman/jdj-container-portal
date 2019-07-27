@@ -32,6 +32,11 @@ import {
   QAvatar,
   QBtnToggle,
   QCheckbox,
+  QTh,
+  QTr,
+  QTd,
+  QTable,
+
 } from 'quasar'
 
 Vue.use(Quasar, {
@@ -63,10 +68,14 @@ Vue.use(Quasar, {
     QAvatar,
     QBtnToggle,
     QCheckbox,
+    QTh,
+    QTr,
+    QTd,
+    QTable,
   },
   directives: {
   },
   plugins: {
   },
-  lang: lang
+  lang: lang,
 })

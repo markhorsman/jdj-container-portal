@@ -51,7 +51,7 @@ export default {
           }
         })
         .catch(() => {
-          this.notifyNotFound();
+          // this.notifyNotFound();
         })
         .finally(() => (this.loading = false));
     }

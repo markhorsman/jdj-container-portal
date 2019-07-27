@@ -4,9 +4,8 @@ import Router from 'vue-router'
 Vue.use(Router)
 
 import Login from '../components/Login.vue'
-// import ReadCustomer from '../components/ReadCustomer.vue'
-// import ReadProduct from '../components/ReadProduct.vue'
 import Rental from '../components/Rental.vue'
+import Items from '../components/Items.vue'
 import Home from '../components/Home.vue'
 
 const routes = [
@@ -34,6 +33,14 @@ const routes = [
     path: '/rental',
     name: 'Rental',
     component: Rental,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/items',
+    name: 'Items',
+    component: Items,
     meta: {
       requiresAuth: true
     }

@@ -44,6 +44,15 @@
             <q-item-label caption>In/uit huur producten</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item clickable tag="a" to="/items">
+          <q-item-section avatar>
+            <q-icon name="format_list_numbered" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Artikelen</q-item-label>
+            <q-item-label caption>Artikelen in contract</q-item-label>
+          </q-item-section>
+        </q-item>
         <q-item v-if="showUser" clickable tag="a" @click="logout">
           <q-item-section avatar>
             <q-icon name="exit_to_app" />
