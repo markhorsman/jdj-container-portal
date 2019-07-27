@@ -13,7 +13,7 @@ instance.interceptors.response.use(response => {
     app.$Progress.finish(); // finish when a response is received
     return response
 }, error => {
-    if (error.response.status === 400 && error.response.message.toLowerCase().indexOf('invalid session id') >= 0) {
+    if (error.response.status === 400 && error.response.message && error.response.message.toLowerCase().indexOf('invalid session id') >= 0) {
         store.commit('logout')
     }
 
