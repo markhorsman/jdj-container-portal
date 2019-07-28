@@ -47,16 +47,16 @@
         </q-item>
         <q-item clickable tag="a" to="/items">
           <q-item-section avatar>
-            <q-icon name="format_list_numbered" />
+            <q-icon name="fas fa-id-badge" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Artikelen</q-item-label>
+            <q-item-label>Contract items</q-item-label>
             <q-item-label caption>Artikelen in contract</q-item-label>
           </q-item-section>
         </q-item>
         <q-item clickable tag="a" to="/stock">
           <q-item-section avatar>
-            <q-icon name="format_list_numbered" />
+            <q-icon name="fas fa-boxes" />
           </q-item-section>
           <q-item-section>
             <q-item-label>Voorraad</q-item-label>
