@@ -8,6 +8,7 @@ import '@quasar/extras/fontawesome-v5/fontawesome-v5.css'
 
 import {
   Quasar,
+  QBar,
   QLayout,
   QHeader,
   QDrawer,
@@ -41,7 +42,15 @@ import {
   QTable,
   QAjaxBar,
   QToggle,
+  QBadge,
+  QTimeline,
+  QTimelineEntry,
+  QScrollArea,
+  QDialog,
+  QCardSection,
+  QCardActions,
   Loading,
+  ClosePopup,
 
 } from 'quasar'
 
@@ -49,6 +58,7 @@ Vue.use(Quasar, {
   config: {},
   components: {
     QLayout,
+    QBar,
     QHeader,
     QDrawer,
     QPageContainer,
@@ -81,8 +91,16 @@ Vue.use(Quasar, {
     QTable,
     QAjaxBar,
     QToggle,
+    QBadge,
+    QTimeline,
+    QTimelineEntry,
+    QScrollArea,
+    QDialog,
+    QCardSection,
+    QCardActions,
   },
   directives: {
+    ClosePopup,
   },
   plugins: {
     Loading,

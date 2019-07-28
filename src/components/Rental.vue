@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-px-lg q-pb-md">
     <q-stepper v-model="step" ref="stepper" color="primary" animated>
       <q-step :name="1" title="Klant ophalen" icon="nfc" :done="step > 1">
         <ReadCustomer />
@@ -111,7 +111,7 @@ export default {
   components: {
     ReadCustomer,
     ReadProduct,
-    ContractItems,
+    ContractItems
   },
   computed: {
     hasCustomer() {
@@ -186,7 +186,7 @@ export default {
             recid
           )}/deliver?api_key=${this.$store.state.api_key}`,
           {
-            'DOCNO#2': 0
+            "DOCNO#2": 0
           }
         );
       } catch (e) {
@@ -285,22 +285,18 @@ export default {
         return;
       }
 
-      const offhireContItemRequests = products.map(
-        async p => {
-          return await this.offhireContractItem(p.RECID, p);
-        }
-      );
+      const offhireContItemRequests = products.map(async p => {
+        return await this.offhireContractItem(p.RECID, p);
+      });
 
       const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
       contItemOffhireResults.forEach(r => {
-         console.log(r);
+        console.log(r);
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
             // const body = JSON.parse(r.config.data);
-
-
             // this.$notify({
             //   group: "api",
             //   title: `${body.Itemno} niet toegevoegd aan contract`,
@@ -488,11 +484,9 @@ export default {
         return;
       }
 
-      const deliverContItemRequests = products.map(
-        async recid => {
-          return await this.deliverContractItem(recid);
-        }
-      );
+      const deliverContItemRequests = products.map(async recid => {
+        return await this.deliverContractItem(recid);
+      });
 
       const contItemDeliverResults = await Promise.all(deliverContItemRequests);
 

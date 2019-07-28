@@ -1,7 +1,8 @@
 <template>
-  <div>
+  <div class="q-px-lg q-pb-md">
+    <br />
     <q-select
-      filled
+      outlined
       clearable
       v-model="group"
       use-input
@@ -18,9 +19,7 @@
       pagination,
       filter
     })"
-      class="float-left"
       label="Hoofdgroep"
-      style="width: 50%"
     >
       <template v-slot:no-option>
         <q-item>
@@ -29,8 +28,10 @@
       </template>
     </q-select>
 
+    <br />
+
     <q-select
-      filled
+      outlined
       clearable
       v-model="subgroup"
       use-input
@@ -48,8 +49,6 @@
       filter
     })"
       label="Subgroep"
-      float-left
-      style="width: 50%;"
     >
       <template v-slot:no-option>
         <q-item>
@@ -57,6 +56,9 @@
         </q-item>
       </template>
     </q-select>
+
+    <br />
+
     <q-table
       class="sticky-header-table"
       title="Voorraad"
@@ -352,7 +354,7 @@ export default {
   }
 
   .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #ffc20e;
+    background-color: #e0e0e0;
   }
 
   thead tr:first-child th {

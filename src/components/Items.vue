@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="q-px-lg q-pb-md">
     <q-table
       title="Artikelen"
       :data="tableData"

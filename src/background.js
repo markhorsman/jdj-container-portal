@@ -13,11 +13,12 @@ let win
 
 // Standard scheme must be registered before the app is ready
 protocol.registerStandardSchemes(['app'], { secure: true })
-function createWindow () {
+function createWindow() {
   // Create the browser window.
-  win = new BrowserWindow({ width: 1300, height: 900, show: false })
+  win = new BrowserWindow({ width: 1360, height: 900, show: false, useContentSize: true, frame: false })
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
+    win.webContents.openDevTools()
     // Load the url of the dev server if in development mode
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
     // if (!process.env.IS_TEST) win.webContents.openDevTools()
@@ -34,8 +35,8 @@ function createWindow () {
 
   // Show when ready
   win.once('ready-to-show', () => {
-     win.show()
- })
+    win.show()
+  })
 }
 
 // Quit when all windows are closed.

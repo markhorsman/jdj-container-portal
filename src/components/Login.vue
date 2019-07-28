@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md" style="max-width: 400px">
-    <h1>Inloggen</h1>
+    <h5>Inloggen</h5>
     <q-form @submit="handleSubmit" @reset="onReset" class="q-gutter-md">
       <q-input
         filled
@@ -14,7 +14,7 @@
         id="password"
         filled
         :type="isPwd ? 'password' : 'text'"
-        hint="Wachtwoord"
+        label="Wachtwoord"
         :rules="[val => !!val || 'Wachtwoord is verplicht']"
       >
         <template v-slot:append>

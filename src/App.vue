@@ -1,92 +1,147 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <notifications group="api" position="top center" />
-    <q-header elevated style="background-color: #ffc20e">
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          @click="leftDrawerOpen = !leftDrawerOpen"
-          aria-label="Menu"
-          icon="menu"
-          color="black"
-        />
+  <div>
+    <q-dialog v-model="confirmLogout" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="exit_to_app" color="primary" text-color="white" />
+          <span class="q-ml-sm">Weet je zeker dat je wilt uitloggen?</span>
+        </q-card-section>
 
-        <q-toolbar-title class="pull-right">
-          <img
-            alt="Vue logo"
-            width="200"
-            src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png"
+        <q-card-actions align="right">
+          <q-btn flat label="Annuleren" color="primary" v-close-popup />
+          <q-btn flat label="Uitloggen" color="danger" @click="logout" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-layout view="hHh Lpr lff" container v-bind:style="{ height: maxHeight + 'px' }" class="shadow-2 rounded-borders">
+      <notifications group="api" align="middle" position="top center" />
+
+      <q-header elevated>
+        <q-bar class="q-electron-drag">
+          <q-badge v-if="showUser">{{ this.$store.state.user.USERNAME }}</q-badge>
+          <q-badge v-if="showUser">{{ this.$store.state.user.DEPOT }}</q-badge>
+          <q-space />
+          <q-icon name="build" />
+          <div>Container Tools</div>
+          <q-space />
+          <q-btn dense flat icon="minimize" @click="minimize" />
+          <q-btn dense flat icon="crop_square" @click="maximize" />
+          <q-btn dense flat icon="close" @click="closeApp" />
+        </q-bar>
+
+        <q-toolbar>
+          <q-btn
+            v-if="showUser"
+            flat
+            dense
+            round
+            @click="drawer = !drawer"
+            aria-label="Menu"
+            icon="menu"
+            color="black"
           />
-        </q-toolbar-title>
-      </q-toolbar>
-    </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" content-class="bg-grey-2">
-      <q-list>
-        <!-- <q-btn color="primary" size="size_xl" label="Terug naar begin" @click="$router.replace('/')"></q-btn> -->
-        <!-- <q-btn push color="primary" size="size_xl" label="Scan product" icon="search" @click="$router.replace('/read-product')"/> -->
-        <q-item clickable tag="a" to="/)">
-          <q-item-section avatar>
-            <q-icon name="home" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Start</q-item-label>
-            <q-item-label caption>Terug naar home</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item clickable tag="a" to="/rental">
-          <q-item-section avatar>
-            <q-icon name="add_shopping_cart" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Verhuren</q-item-label>
-            <q-item-label caption>In/uit huur producten</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item clickable tag="a" to="/items">
-          <q-item-section avatar>
-            <q-icon name="fas fa-id-badge" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Contract items</q-item-label>
-            <q-item-label caption>Artikelen in contract</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item clickable tag="a" to="/stock">
-          <q-item-section avatar>
-            <q-icon name="fas fa-boxes" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Voorraad</q-item-label>
-            <q-item-label caption>Voorraad artikelen inzien</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item v-if="showUser" clickable tag="a" @click="logout">
-          <q-item-section avatar>
-            <q-icon name="exit_to_app" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Uitloggen</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
-    </q-drawer>
+          <q-toolbar-title class="pull-right">
+            <img
+              alt="Vue logo"
+              width="200"
+              src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png"
+            />
+          </q-toolbar-title>
+        </q-toolbar>
+      </q-header>
 
-    <q-page-container>
-      <q-ajax-bar />
-      <router-view />
-    </q-page-container>
-  </q-layout>
+      <q-drawer
+        v-if="showUser"
+        v-model="drawer"
+        :mini="!drawer || miniState"
+        :width="200"
+        :breakpoint="500"
+        show-if-above
+        bordered
+        content-class="bg-grey-3"
+      >
+        <q-scroll-area class="fit">
+          <q-list padding>
+            <q-item clickable tag="a" to="/" exact>
+              <q-item-section avatar>
+                <q-icon name="home" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Home</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable tag="a" to="/rental">
+              <q-item-section avatar>
+                <q-icon name="add_shopping_cart" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Verhuren</q-item-label>
+                <q-item-label caption>In/uit huur producten</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable tag="a" to="/items">
+              <q-item-section avatar>
+                <q-icon name="fas fa-id-badge" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Contract items</q-item-label>
+                <q-item-label caption>Artikelen in contract</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable tag="a" to="/stock">
+              <q-item-section avatar>
+                <q-icon name="fas fa-boxes" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Voorraad</q-item-label>
+                <q-item-label caption>Voorraad artikelen inzien</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="showUser" clickable tag="a" @click="confirmLogout = true">
+              <q-item-section avatar>
+                <q-icon name="exit_to_app" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Uitloggen</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
+
+        <div class="q-mini-drawer absolute" style="top: 15px; right: -20px;">
+          <q-btn
+            dense
+            round
+            unelevated
+            color="orange"
+            :icon="miniState ? 'chevron_right' : 'chevron_left'"
+            @click="miniState = !miniState"
+          />
+        </div>
+      </q-drawer>
+
+      <q-page-container>
+        <q-ajax-bar />
+        <router-view />
+      </q-page-container>
+    </q-layout>
+  </div>
 </template>
 <script>
-import { eventHub } from './eventhub'
+import { eventHub } from "./eventhub";
+const { remote } = require("electron");
+const win = remote.getCurrentWindow();
+
 export default {
   name: "app",
   data() {
     return {
-      leftDrawerOpen: this.$q.platform.is.desktop
+      drawer: this.$q.platform.is.desktop,
+      miniState: false,
+      confirmLogout: false,
+      maxHeight: win.getContentSize()[1]
     };
   },
   computed: {
@@ -98,11 +153,46 @@ export default {
     logout() {
       this.$store.commit("logout");
     },
+
     showSpinner() {
       this.$q.loading.show();
     },
+
     hideSpinner() {
       this.$q.loading.hide();
+    },
+
+    minimize() {
+      if (process.env.IS_ELECTRON) {
+        win.minimize();
+      }
+    },
+
+    maximize() {
+      if (process.env.IS_ELECTRON) {
+        if (win.isMaximized()) {
+          win.unmaximize();
+        } else {
+          win.maximize();
+        }
+      }
+    },
+
+    closeApp() {
+      win.close();
+    },
+
+    drawerClick(e) {
+      // if in "mini" state and user
+      // click on drawer, we switch it to "normal" mode
+      if (this.miniState) {
+        this.miniState = false;
+
+        // notice we have registered an event with capture flag;
+        // we need to stop further propagation as this click is
+        // intended for switching drawer to "normal" mode only
+        e.stopPropagation();
+      }
     }
   },
   created() {
@@ -128,5 +218,11 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  .text-brand {
+    color: #a2aa33;
+  }
+  .bg-brand {
+    background: #a2aa33;
+  }
 }
 </style>
