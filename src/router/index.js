@@ -7,6 +7,7 @@ import Login from '../components/Login.vue'
 import Rental from '../components/Rental.vue'
 import Items from '../components/Items.vue'
 import Home from '../components/Home.vue'
+import Stock from '../components/Stock.vue'
 
 const routes = [
   {
@@ -41,6 +42,14 @@ const routes = [
     path: '/items',
     name: 'Items',
     component: Items,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/stock',
+    name: 'Stock',
+    component: Stock,
     meta: {
       requiresAuth: true
     }

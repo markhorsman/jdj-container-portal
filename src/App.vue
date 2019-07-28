@@ -53,6 +53,15 @@
             <q-item-label caption>Artikelen in contract</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item clickable tag="a" to="/stock">
+          <q-item-section avatar>
+            <q-icon name="format_list_numbered" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Voorraad</q-item-label>
+            <q-item-label caption>Voorraad artikelen inzien</q-item-label>
+          </q-item-section>
+        </q-item>
         <q-item v-if="showUser" clickable tag="a" @click="logout">
           <q-item-section avatar>
             <q-icon name="exit_to_app" />
@@ -89,11 +98,9 @@ export default {
       this.$store.commit("logout");
     },
     showSpinner() {
-      console.log("show spinner");
       this.$q.loading.show();
     },
     hideSpinner() {
-      console.log("hide spinner");
       this.$q.loading.hide();
     }
   },

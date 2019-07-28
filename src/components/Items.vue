@@ -178,22 +178,6 @@ export default {
         .catch(() => {})
         .finally(() => (this.loading = false));
     }
-
-    /*getGroups: function()
-      Promise.all([
-        this.$api.get(
-          `${this.$config.api_base_url}/productgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME`
-        ),
-        this.$api.get(
-          `${this.$config.api_base_url}/subgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME`
-        )
-      ])
-        .then(res => {
-          this.groups = res[0].data;
-          this.subgroups = res[1].data;
-        })
-        .catch(() => {});
-    }*/
   }
 };
 </script>
