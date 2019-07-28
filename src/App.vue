@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <notifications group="api" position="top center"/>
+    <notifications group="api" position="top center" />
     <q-header elevated>
       <q-toolbar>
         <q-btn
@@ -71,6 +71,7 @@
   </q-layout>
 </template>
 <script>
+import { eventHub } from './eventhub'
 export default {
   name: "app",
   data() {
@@ -86,7 +87,27 @@ export default {
   methods: {
     logout() {
       this.$store.commit("logout");
+    },
+    showSpinner() {
+      console.log("show spinner");
+      this.$q.loading.show();
+    },
+    hideSpinner() {
+      console.log("hide spinner");
+      this.$q.loading.hide();
     }
+  },
+  created() {
+    eventHub.$on("before-request", this.showSpinner);
+    eventHub.$on("request-error", this.hideSpinner);
+    eventHub.$on("after-response", this.hideSpinner);
+    eventHub.$on("response-error", this.hideSpinner);
+  },
+  beforeDestroy() {
+    eventHub.$off("before-request", this.showSpinner);
+    eventHub.$off("request-error", this.hideSpinner);
+    eventHub.$off("after-response", this.hideSpinner);
+    eventHub.$off("response-error", this.hideSpinner);
   }
 };
 </script>

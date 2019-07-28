@@ -63,9 +63,6 @@
         </q-list>
         <br />
         <br />Bevestig de gekozen producten door op onderstaande knop te drukken.
-        <br />
-        <br />
-        <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
       </q-step>
       <template v-slot:navigation>
         <q-stepper-navigation>
@@ -73,7 +70,7 @@
             @click="step === 4 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
             :label="step === 4 ? 'Bevestigen' : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts) || loading"
+            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts)"
           />
           <q-btn
             v-if="step > 1"
@@ -254,7 +251,6 @@ export default {
       )
         return;
 
-      this.loading = true;
       const products = [];
       const processed = [];
       let failed = 0;
@@ -343,7 +339,6 @@ export default {
 
       // all failed
       if (failed && failed === products.length) {
-        this.loading = false;
         return;
       }
 
@@ -372,8 +367,6 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
-      this.loading = false;
-
       this.$notify({
         group: "api",
         title: "Contract items",
@@ -397,7 +390,6 @@ export default {
       let deliverFailed = 0;
       const products = [];
       const stockItems = [];
-      this.loading = true;
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
 
       const res = await this.getContract();
@@ -493,7 +485,6 @@ export default {
       */
 
       if (failed && failed === contItemResults.length) {
-        this.loading = false;
         return;
       }
 
@@ -535,8 +526,6 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
-      this.loading = false;
-
       this.$notify({
         group: "api",
         title: "Contract items toegevoegd",
@@ -551,7 +540,6 @@ export default {
   data() {
     return {
       step: 1,
-      loading: false,
       rentalType: "pickup"
     };
   }

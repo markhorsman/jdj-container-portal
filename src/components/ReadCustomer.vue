@@ -8,7 +8,6 @@
       <p v-if="uid">UID: {{ uid }}</p>
 
       <h3 v-if="customer">{{ customer.NAME }}</h3>
-      <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
     </div>
   </div>
 </template>
@@ -19,7 +18,6 @@ import { NFC } from "nfc-pcsc";
 export default {
   data() {
     return {
-      loading: false,
       nfc: null,
       readers: null,
       devices: null,
@@ -72,7 +70,6 @@ export default {
       });
     },
     getCustomer: function() {
-      this.loading = true;
       this.$api
         .get(
           `${this.$config.container_api_base_url}customercontact/${this.uid}`,
@@ -89,9 +86,6 @@ export default {
         .catch(() => {
           this.notifyNotFound();
         })
-        .finally(() => {
-          this.loading = false;
-        });
     }
   },
 

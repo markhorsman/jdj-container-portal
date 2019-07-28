@@ -5,7 +5,6 @@
     >Voeg producten toe met de barcode scanner door de QR code op het product te scannen.</p>
     <br />
     <br />
-    <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
     <q-list v-if="products.length" bordered separator>
       <q-item v-for="(p, index) in products" v-bind:key="index">
         <q-item-section>
@@ -94,7 +93,6 @@ export default {
     return {
       products: this.$store.state.rentalProducts || [],
       itemnumber: null,
-      loading: false,
       code: "",
       reading: false
     };
@@ -156,7 +154,6 @@ export default {
       });
     },
     getProduct: function() {
-      this.loading = true;
       this.$api
         .get(
           `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL,STATUS`
@@ -182,7 +179,6 @@ export default {
         .catch(() => {
           this.notifyNotFound();
         })
-        .finally(() => (this.loading = false));
     }
   },
 

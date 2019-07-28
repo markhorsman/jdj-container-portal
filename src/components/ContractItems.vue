@@ -1,9 +1,5 @@
 <template>
-  <div class="qr">
-    <br />
-    <br />
-    <q-spinner-hourglass v-if="loading" color="purple" size="4em" />
-
+  <div>
     <p><strong>Momenteel op naam</strong></p>
 
     <q-list bordered separator>
@@ -26,7 +22,6 @@ export default {
   data() {
     return {
       items: [],
-      loading: false
     };
   },
 
@@ -36,7 +31,6 @@ export default {
 
   methods: {
     getItems: function() {
-      this.loading = true;
       this.$api
         .get(
           `${this.$config.api_base_url}/contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1`
@@ -50,10 +44,7 @@ export default {
             });
           }
         })
-        .catch(() => {
-          // this.notifyNotFound();
-        })
-        .finally(() => (this.loading = false));
+        .catch(() => {})
     }
   }
 };

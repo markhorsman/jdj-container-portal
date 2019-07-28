@@ -37,6 +37,7 @@ import {
   QTd,
   QTable,
   QAjaxBar,
+  Loading,
 
 } from 'quasar'
 
@@ -78,6 +79,7 @@ Vue.use(Quasar, {
   directives: {
   },
   plugins: {
+    Loading,
   },
   lang: lang,
 })
