@@ -1,20 +1,18 @@
 <template>
   <div>
-    <br />
-    <br />
-
     <q-table
       title="Artikelen"
       :data="tableData"
       :columns="columns"
-      row-key="itemno"
+      row-key="ITEMNO"
       :loading="loading"
       :filter="filter"
       :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 0]"
       :pagination.sync="pagination"
+      @request="onRequest"
     >
       <template v-slot:top-right>
-        <q-input borderless dense debounce="300" v-model="filter" placeholder="Zoek op naam">
+        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoek op naam">
           <template v-slot:append>
             <q-icon name="search" />
           </template>
@@ -31,14 +29,15 @@ export default {
   data() {
     return {
       pagination: {
-        sortBy: "itemno",
+        rowsNumber: 0,
+        sortBy: "ITEMNO",
         descending: false,
         page: 1,
         rowsPerPage: 10
       },
       columns: [
         {
-          name: "contno",
+          name: "CONTNO",
           required: true,
           label: "Contractnummer",
           align: "left",
@@ -47,7 +46,7 @@ export default {
           sortable: true
         },
         {
-          name: "itemno",
+          name: "ITEMNO",
           required: true,
           label: "Artikelnummer",
           align: "left",
@@ -56,7 +55,7 @@ export default {
           sortable: true
         },
         {
-          name: "itemdesc",
+          name: "ITEMDESC",
           required: true,
           label: "Omschrijving 1",
           align: "left",
@@ -65,7 +64,7 @@ export default {
           sortable: true
         },
         {
-          name: "itemdesc2",
+          name: "ITEMDESC2",
           required: true,
           label: "Omschrijving 2",
           align: "left",
@@ -74,7 +73,7 @@ export default {
           sortable: true
         },
         {
-          name: "itemdesc3",
+          name: "ITEMDESC3",
           required: true,
           label: "Omschrijving 3",
           align: "left",
@@ -83,7 +82,7 @@ export default {
           sortable: true
         },
         {
-          name: "memo",
+          name: "MEMO",
           required: true,
           label: "Memo",
           align: "left",
@@ -131,7 +130,10 @@ export default {
 
     this.nfc.on("error", err => {});
 
-    this.getItems();
+    this.onRequest({
+      pagination: this.pagination,
+      filter: undefined
+    });
   },
 
   methods: {
@@ -166,18 +168,54 @@ export default {
         });
     },
 
-    getItems: function() {
+    onRequest(props) {
+      let {
+        page,
+        rowsPerPage,
+        rowsNumber,
+        sortBy,
+        descending
+      } = props.pagination;
+      let filter = props.filter;
       this.loading = true;
+
+      // calculate starting row of data
+      let startRow = (page - 1) * rowsPerPage;
+
+      const buildFilter = () => `STATUS eq 1${filter ? ` and startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or startswith(MEMO, '${filter}')` : ``}`;
+
       this.$api
         .get(
-          `${this.$config.api_base_url}/contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO`
+          `${this.$config.api_base_url}contracts/${
+            this.$config.default_contract_number
+          }/items?api_key=${
+            this.$store.state.api_key
+          }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
+            sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
+          }&$filter=${buildFilter()}&fields=CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO`
         )
         .then(res => {
-          this.tableData = res.data;
+          this.pagination.page = page;
+          this.pagination.rowsPerPage = rowsPerPage;
+          this.pagination.rowsNumber = res.data.totalCount;
+          this.pagination.sortBy = sortBy;
+          this.pagination.descending = descending;
+
+          this.tableData = res.data.results;
         })
         .catch(() => {})
         .finally(() => (this.loading = false));
     }
+  },
+
+  destroyed() {
+    // stops listening for new readers
+    this.nfc.close();
+
+    this.readers.forEach(reader => {
+      // stops listening for reader status changes, reader emits 'end' event
+      reader.close();
+    });
   }
 };
 </script>
