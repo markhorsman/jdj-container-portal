@@ -4,10 +4,11 @@
     <br />
 
     <q-table
+      class="sticky-header-table"
       title="Voorraad"
       :data="tableData"
       :columns="columns"
-      row-key="itemno"
+      row-key="ITEMNO"
       :loading="loading"
       :filter="filter"
       :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100, 200, 300]"
@@ -31,15 +32,14 @@ export default {
     return {
       pagination: {
         rowsNumber: 0,
-        sortBy: "itemno",
+        sortBy: "ITEMNO",
         descending: false,
         page: 1,
         rowsPerPage: 10
       },
       columns: [
-        //CURRDEPOT,PGROUP,GRPCODE,ITEMNO,DESC#1,DESC#2,DESC#3,STATUS
         {
-          name: "currdepot",
+          name: "CURRDEPOT",
           required: true,
           label: "Depot",
           align: "left",
@@ -48,7 +48,7 @@ export default {
           sortable: true
         },
         {
-          name: "pgroup",
+          name: "PGROUP",
           required: true,
           label: "Hoofdgroep",
           align: "left",
@@ -57,7 +57,7 @@ export default {
           sortable: true
         },
         {
-          name: "grpcode",
+          name: "GRPCODE",
           required: true,
           label: "Subgroep",
           align: "left",
@@ -66,7 +66,7 @@ export default {
           sortable: true
         },
         {
-          name: "itemno",
+          name: "ITEMNO",
           required: true,
           label: "Artikelnummer",
           align: "left",
@@ -75,7 +75,7 @@ export default {
           sortable: true
         },
         {
-          name: "desc1",
+          name: "DESC1",
           required: true,
           label: "Omschrijving 1",
           align: "left",
@@ -84,7 +84,7 @@ export default {
           sortable: true
         },
         {
-          name: "desc2",
+          name: "DESC2",
           required: true,
           label: "Omschrijving 2",
           align: "left",
@@ -93,7 +93,7 @@ export default {
           sortable: true
         },
         {
-          name: "desc3",
+          name: "DESC3",
           required: true,
           label: "Omschrijving 3",
           align: "left",
@@ -102,7 +102,7 @@ export default {
           sortable: true
         },
         {
-          name: "status",
+          name: "STATUS",
           required: true,
           label: "Status",
           align: "left",
@@ -114,12 +114,13 @@ export default {
       tableData: [],
       filter: "",
       loading: false,
-      uid: null,
-      readers: []
+      groups: [],
+      subgroups: []
     };
   },
 
   mounted() {
+    this.getGroups();
     this.onRequest({
       pagination: this.pagination,
       filter: undefined
@@ -127,15 +128,6 @@ export default {
   },
 
   methods: {
-    // notifyNotFound: function() {
-    //   this.$notify({
-    //     group: "api",
-    //     title: "Klant niet gevonden",
-    //     text: `Klant met identifier ${this.uid} niet gevonden.`,
-    //     type: "error"
-    //   });
-    // },
-
     onRequest(props) {
       let {
         page,
@@ -152,20 +144,22 @@ export default {
 
       this.$api
         .get(
-          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$top=${this.pagination.rowsPerPage}&$skip=${startRow}&$inlinecount=allpages&$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=CURRDEPOT,PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS`
+          `${this.$config.api_base_url}stock?api_key=${
+            this.$store.state.api_key
+          }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
+            sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
+          }&$filter=CURRDEPOT eq '${
+            this.$store.state.user.DEPOT
+          }'&fields=CURRDEPOT,PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS`
         )
         .then(res => {
-          this.pagination.rowsNumber = Math.ceil(
-            res.data.totalCount / this.pagination.rowsPerPage
-          );
           this.pagination.page = page;
           this.pagination.rowsPerPage = rowsPerPage;
+          this.pagination.rowsNumber = res.data.totalCount;
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
 
           this.tableData = res.data.results;
-
-          console.log(this.pagination);
         })
         .catch(() => {})
         .finally(() => (this.loading = false));
@@ -177,12 +171,19 @@ export default {
           `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME`
         ),
         this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
         )
       ])
         .then(res => {
-          this.groups = res[0].data;
+          const all = res[0].data;
           this.subgroups = res[1].data;
+          this.groups = this.subgroups.reduce((acc, grp) => {
+            if (!acc.find(p => p.CODE === grp.PGROUP)) {
+              const group = all.find(p => p.CODE === grp.PGROUP);
+              if (group) acc.push(group);
+            }
+            return acc;
+          }, []);
         })
         .catch(() => {});
     }
@@ -190,8 +191,20 @@ export default {
 };
 </script>
 
-<style scoped>
-h1 {
-  color: #42b983;
-}
+<style lang="stylus">
+.sticky-header-table
+  /* max height is important */
+  .q-table__middle
+    max-height 500px
+
+  .q-table__top,
+  .q-table__bottom,
+  thead tr:first-child th /* bg color is important for th; just specify one */
+    background-color #ffc20e
+
+  thead tr:first-child th
+    position sticky
+    top 0
+    opacity 1
+    z-index 1
 </style>
