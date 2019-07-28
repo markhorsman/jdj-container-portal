@@ -65,6 +65,7 @@
     </q-drawer>
 
     <q-page-container>
+      <q-ajax-bar />
       <router-view />
     </q-page-container>
   </q-layout>
