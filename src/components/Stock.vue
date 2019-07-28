@@ -49,7 +49,7 @@
     })"
       label="Subgroep"
       float-left
-      style="width: 50%; padding-bottom: 32px"
+      style="width: 50%;"
     >
       <template v-slot:no-option>
         <q-item>
@@ -99,15 +99,6 @@ export default {
       },
       columns: [
         {
-          name: "CURRDEPOT",
-          required: true,
-          label: "Depot",
-          align: "left",
-          field: row => row.CURRDEPOT,
-          format: val => `${val}`,
-          sortable: true
-        },
-        {
           name: "PGROUP",
           required: true,
           label: "Hoofdgroep",
@@ -137,7 +128,7 @@ export default {
         {
           name: "DESC1",
           required: true,
-          label: "Omschrijving 1",
+          label: "Omschr. 1",
           align: "left",
           field: row => row.DESC1,
           format: val => `${val}`,
@@ -146,7 +137,7 @@ export default {
         {
           name: "DESC2",
           required: true,
-          label: "Omschrijving 2",
+          label: "Omschr. 2",
           align: "left",
           field: row => row.DESC2,
           format: val => `${val}`,
@@ -155,7 +146,7 @@ export default {
         {
           name: "DESC3",
           required: true,
-          label: "Omschrijving 3",
+          label: "Omschr. 3",
           align: "left",
           field: row => row.DESC3,
           format: val => `${val}`,
@@ -167,6 +158,15 @@ export default {
           label: "Status",
           align: "left",
           field: row => row.STATUS,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "STKLEVEL",
+          required: true,
+          label: "Voorraad",
+          align: "left",
+          field: row => row.STKLEVEL,
           format: val => `${val}`,
           sortable: true
         }
@@ -222,7 +222,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=CURRDEPOT,PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS`
+          }&$filter=${buildFilter()}&fields=CURRDEPOT,PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
         )
         .then(res => {
           this.pagination.page = page;
@@ -280,7 +280,9 @@ export default {
       update(() => {
         const needle = val.toLowerCase();
         this.subgroupOptions = this.groups.sub.filter(
-          v => v.label.toLowerCase().indexOf(needle) > -1 && (this.group ? v.pgroup === this.group.value : true)
+          v =>
+            v.label.toLowerCase().indexOf(needle) > -1 &&
+            (this.group ? v.pgroup === this.group.value : true)
         );
       });
     }

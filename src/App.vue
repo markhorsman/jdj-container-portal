@@ -1,7 +1,7 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <notifications group="api" position="top center" />
-    <q-header elevated>
+    <q-header elevated style="background-color: #ffc20e">
       <q-toolbar>
         <q-btn
           flat
@@ -10,6 +10,7 @@
           @click="leftDrawerOpen = !leftDrawerOpen"
           aria-label="Menu"
           icon="menu"
+          color="black"
         />
 
         <q-toolbar-title class="pull-right">
