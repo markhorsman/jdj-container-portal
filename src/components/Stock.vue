@@ -188,12 +188,17 @@ export default {
       group: null,
       subgroup: null,
       statusInRent: false,
-      statusInRepair: false
+      statusInRepair: false,
+      code: "",
+      reading: false
     };
   },
 
   mounted() {
+    document.addEventListener("keypress", this.getInput);
+
     this.getGroups();
+
     this.onRequest({
       pagination: this.pagination,
       filter: undefined
@@ -276,6 +281,30 @@ export default {
         .catch(() => {});
     },
 
+    getInput: function(e) {
+      e.stopImmediatePropagation();
+      if (e.keyCode === 13 && this.code.length >= 5) {
+        this.filter = this.code;
+        this.code = "";
+
+        this.onRequest({
+          pagination: this.pagination,
+          filter: this.filter
+        });
+      } else {
+        this.code += e.key;
+      }
+
+      //run a timeout of 200ms at the first read and clear everything
+      if (!this.reading) {
+        this.reading = true;
+        setTimeout(() => {
+          this.code = "";
+          this.reading = false;
+        }, 200);
+      }
+    },
+
     filterGroups(val, update, abort) {
       update(() => {
         const needle = val.toLowerCase();
@@ -307,6 +336,10 @@ export default {
         filter: this.filter
       });
     }
+  },
+
+  destroyed() {
+    document.removeEventListener("keypress", this.getInput);
   }
 };
 </script>
