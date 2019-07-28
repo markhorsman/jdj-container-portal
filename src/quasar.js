@@ -40,6 +40,7 @@ import {
   QTd,
   QTable,
   QAjaxBar,
+  QToggle,
   Loading,
 
 } from 'quasar'
@@ -79,6 +80,7 @@ Vue.use(Quasar, {
     QTd,
     QTable,
     QAjaxBar,
+    QToggle,
   },
   directives: {
   },

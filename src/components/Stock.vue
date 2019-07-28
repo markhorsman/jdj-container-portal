@@ -69,6 +69,11 @@
       :pagination.sync="pagination"
       @request="onRequest"
     >
+      <template v-slot:top-left>
+        <q-toggle v-model="statusInRent" label="In huur" @input="statusFilter('rent')" />
+        <q-toggle v-model="statusInRepair" label="In Reparatie" @input="statusFilter('repair')" />
+      </template>
+
       <template v-slot:top-right>
         <q-input
           borderless
@@ -181,7 +186,9 @@ export default {
       groupOptions: [],
       subgroupOptions: [],
       group: null,
-      subgroup: null
+      subgroup: null,
+      statusInRent: false,
+      statusInRepair: false
     };
   },
 
@@ -214,6 +221,8 @@ export default {
         }
         ${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}
         ${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}
+        ${this.statusInRent ? ` and STATUS eq 1` : ``}
+        ${this.statusInRepair ? ` and STATUS eq 2` : ``}
         `;
 
       this.$api
@@ -284,6 +293,18 @@ export default {
             v.label.toLowerCase().indexOf(needle) > -1 &&
             (this.group ? v.pgroup === this.group.value : true)
         );
+      });
+    },
+
+    statusFilter(type) {
+      if (this.statusInRepair && this.statusInRent) {
+        if (type === "repair") this.statusInRent = false;
+        else this.statusInRepair = false;
+      }
+
+      this.onRequest({
+        pagination: this.pagination,
+        filter: this.filter
       });
     }
   }
