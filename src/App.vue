@@ -14,7 +14,12 @@
       </q-card>
     </q-dialog>
 
-    <q-layout view="hHh Lpr lff" container v-bind:style="{ height: maxHeight + 'px' }" class="shadow-2 rounded-borders">
+    <q-layout
+      view="hHh Lpr lff"
+      container
+      v-bind:style="{ height: maxHeight + 'px' }"
+      class="shadow-2 rounded-borders"
+    >
       <notifications group="api" align="middle" position="top center" />
 
       <q-header elevated>
@@ -99,6 +104,18 @@
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item clickable tag="a" to="/stockcount">
+              <q-item-section avatar>
+                <q-icon name="fas fa-calculator" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Tellijst</q-item-label>
+                <q-item-label caption>Tellijsten genereren</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-separator />
+
             <q-item v-if="showUser" clickable tag="a" @click="confirmLogout = true">
               <q-item-section avatar>
                 <q-icon name="exit_to_app" />

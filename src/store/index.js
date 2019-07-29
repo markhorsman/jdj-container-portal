@@ -11,12 +11,14 @@ export default new Vuex.Store({
         user: (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null),
         customer: null,
         rentalProducts: [],
+        stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null)
     },
     mutations: {
         login(state, data) {
             state.user = data
             state.api_key = data.SESSIONID
         },
+
         logout(state) {
             localStorage.removeItem('user')
             localStorage.removeItem('api_key')
@@ -26,11 +28,18 @@ export default new Vuex.Store({
             state.rentalProducts = []
             router.push('/login')
         },
+
         updateCustomer(state, customer) {
             state.customer = customer
         },
+
         updateRentalProducts(state, products) {
             state.rentalProducts = products
+        },
+
+        saveStockCount(state, selected) {
+            state.stockCount = selected;
+            localStorage.setItem('stockCount', JSON.stringify(selected));
         }
     }
 })

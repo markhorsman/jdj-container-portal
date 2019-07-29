@@ -49,6 +49,7 @@ import {
   QDialog,
   QCardSection,
   QCardActions,
+  QSeparator,
   Loading,
   ClosePopup,
 
@@ -98,6 +99,7 @@ Vue.use(Quasar, {
     QDialog,
     QCardSection,
     QCardActions,
+    QSeparator,
   },
   directives: {
     ClosePopup,
