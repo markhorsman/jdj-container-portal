@@ -95,6 +95,8 @@
 
 <script>
 export default {
+  name: "Stock",
+
   data() {
     return {
       pagination: {

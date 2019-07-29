@@ -16,6 +16,8 @@
 import { NFC } from "nfc-pcsc";
 
 export default {
+  name: "ReadCustomer",
+  
   data() {
     return {
       nfc: null,

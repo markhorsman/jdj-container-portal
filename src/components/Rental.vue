@@ -1,5 +1,19 @@
 <template>
   <div class="q-px-lg q-pb-md">
+    <q-dialog v-model="confirmCancel" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="cancel" color="primary" text-color="white" />
+          <span class="q-ml-sm">Weet je zeker dat je wilt stoppen?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Nee" color="primary" v-close-popup />
+          <q-btn flat label="Ja" color="danger" @click="cancel" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-stepper v-model="step" ref="stepper" color="primary" animated>
       <q-step :name="1" title="Klant ophalen" icon="nfc" :done="step > 1">
         <ReadCustomer />
@@ -83,7 +97,7 @@
           <q-btn
             v-if="step > 1"
             color="red"
-            @click="cancel()"
+            @click="confirmCancel = true"
             label="Annuleren"
             class="q-ml-sm float-right"
           />
@@ -108,11 +122,13 @@ const STOCK_IN_REPAIR_STATUS = 2;
 
 export default {
   name: "Rental",
+
   components: {
     ReadCustomer,
     ReadProduct,
     ContractItems
   },
+
   computed: {
     hasCustomer() {
       return !!this.$store.state.customer;
@@ -121,8 +137,18 @@ export default {
       return !!this.$store.state.rentalProducts.length;
     }
   },
+
+  data() {
+    return {
+      step: 1,
+      rentalType: "pickup",
+      confirmCancel: false
+    };
+  },
+
   methods: {
     cancel: function() {
+      this.confirmCancel = false;
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
       this.$router.push("/");
@@ -530,12 +556,6 @@ export default {
       });
       this.$router.push("/");
     }
-  },
-  data() {
-    return {
-      step: 1,
-      rentalType: "pickup"
-    };
   }
 };
 </script>

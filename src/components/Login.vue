@@ -47,6 +47,8 @@
 import { required } from "vuelidate/lib/validators";
 
 export default {
+  name: "Login",
+  
   data() {
     return {
       errored: false,

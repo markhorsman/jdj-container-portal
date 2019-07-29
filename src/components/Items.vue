@@ -26,6 +26,8 @@
 import { NFC } from "nfc-pcsc";
 
 export default {
+  name: "Items",
+
   data() {
     return {
       pagination: {
@@ -182,7 +184,12 @@ export default {
       // calculate starting row of data
       let startRow = (page - 1) * rowsPerPage;
 
-      const buildFilter = () => `STATUS eq 1${filter ? ` and startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or startswith(MEMO, '${filter}')` : ``}`;
+      const buildFilter = () =>
+        `STATUS eq 1${
+          filter
+            ? ` and startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or startswith(MEMO, '${filter}')`
+            : ``
+        }`;
 
       this.$api
         .get(

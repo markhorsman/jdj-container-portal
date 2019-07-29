@@ -89,6 +89,8 @@
 
 <script>
 export default {
+  name: "ReadProduct",
+
   data() {
     return {
       products: this.$store.state.rentalProducts || [],
