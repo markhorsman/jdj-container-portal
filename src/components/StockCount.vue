@@ -18,7 +18,7 @@
             v-close-popup
             @click="clear"
           />
-          <q-btn v-if="listType === 'uncounted'" flat label="Sluiten" color="danger" v-close-popup />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -200,14 +200,14 @@ export default {
       selectedPagination: {
         descending: false,
         page: 1,
-        rowsPerPage: 10
+        rowsPerPage: 100
       },
       pagination: {
         rowsNumber: 0,
         sortBy: "ITEMNO",
         descending: false,
         page: 1,
-        rowsPerPage: 10
+        rowsPerPage: 100
       },
       columns: [
         {
@@ -355,10 +355,10 @@ export default {
           this.pagination.rowsNumber = res.data.totalCount;
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
-         
+
           this.tableData = res.data.results.reduce((acc, p) => {
             const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
-  
+
             if (!s) {
               p.QTY = p.STKLEVEL;
               acc.push(p);
@@ -566,9 +566,15 @@ export default {
         this.listType === "counted"
           ? "Tellijst artikelen"
           : "Ongetelde artikelen";
+      const intro =
+        this.listType === "counted"
+          ? "Hierbij ontvangt u een tellijst van artikelen"
+          : "Hierbij ontvangt u een lijst met ongetelde artikelen:";
+      
       this.chooseEmail = false;
       eventHub.$emit("before-request");
-      return emailStockCount(list, this.emailaddress)
+
+      return emailStockCount(list, this.emailaddress, subject, intro)
         .then(info => {
           this.$notify({
             group: "api",
