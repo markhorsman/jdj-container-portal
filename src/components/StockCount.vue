@@ -61,6 +61,8 @@
       title="Geteld"
       :data="selected"
       :columns="selectedColumns"
+      :rows-per-page-options="[]"
+      :pagination.sync="selectedPagination"
       row-key="ITEMNO"
       class="float-right"
       style="width: 49%;"
@@ -71,7 +73,7 @@
           color="primary"
           :disabled="!selected.length"
           label="Tellijst genereren"
-          @click="genList"
+          @click="email"
         />
       </template>
 
@@ -80,7 +82,7 @@
           <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
           <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
           <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
-            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE"/>
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ props.row.QTY }}
             <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
               <q-list>
@@ -118,13 +120,19 @@
 </template>
 
 <script>
-
-import { findIndex } from 'lodash'
+import { findIndex } from "lodash";
+import { eventHub } from '../eventhub'
+import emailStockCount from "../mailer";
 
 export default {
   data() {
     return {
       selected: this.$store.state.stockCount,
+      selectedPagination: {
+        descending: false,
+        page: 1,
+        rowsPerPage: 10
+      },
       pagination: {
         rowsNumber: 0,
         sortBy: "ITEMNO",
@@ -379,11 +387,34 @@ export default {
       });
     },
 
-    genList() {
-      console.log("gen list called");
-      this.selected = [];
-      this.$store.commit("saveStockCount", this.selected);
-    }
+    email() {
+      eventHub.$emit('before-request');
+      return emailStockCount(this.$store.state.stockCount)
+        .then(info => {
+          this.$notify({
+            group: "api",
+            title: `Tellijst verstuurd.`,
+            text: `De tellijst met ${this.$store.state.stockCount.length} producten is verzonden.`,
+            type: "success",
+            duration: 5000
+          });
+          this.$store.commit("saveStockCount", []);
+          this.selected = [];
+          // eventHub.$emit('email-stock-count-success');
+        })
+        .catch(e => {
+          this.$notify({
+            group: "api",
+            title: `Email sturen mislukt.`,
+            text: e.message,
+            type: "error",
+            duration: 5000
+          });
+        })
+        .finally(() => {
+          eventHub.$emit('after-response');
+        });
+    },
   },
 
   destroyed() {

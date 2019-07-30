@@ -19,6 +19,7 @@
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "nfc-pcsc": "^0.6.2",
+    "nodemailer": "^6.3.0",
     "quasar": "^1.0.0",
     "quasar-extras": "^2.0.9",
     "vue": "^2.6.10",
