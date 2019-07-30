@@ -4,13 +4,21 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="fas fa-calculator" color="primary" text-color="white" />
-          <span class="q-ml-sm">Wil je de tellijst mailen of printen?</span>
+          <span class="q-ml-sm">Wil je de lijst mailen of printen?</span>
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
           <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
-          <q-btn flat label="Lijst leegmaken" color="danger" v-close-popup @click="clear" />
+          <q-btn
+            v-if="listType === 'counted'"
+            flat
+            label="Lijst leegmaken"
+            color="danger"
+            v-close-popup
+            @click="clear"
+          />
+          <q-btn v-if="listType === 'uncounted'" flat label="Sluiten" color="danger" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -88,6 +96,15 @@
       class="float-left"
       style="width: 49%;"
     >
+      <template v-slot:top-left>
+        <q-btn
+          dense
+          color="primary"
+          :disabled="!tableData.length"
+          label="Lijst ongeteld genereren"
+          @click="genList = true; listType = 'uncounted';"
+        />
+      </template>
       <template v-slot:top-right>
         <q-input
           borderless
@@ -119,7 +136,7 @@
           color="primary"
           :disabled="!selected.length"
           label="Tellijst genereren"
-          @click="genList = true"
+          @click="genList = true; listType = 'counted';"
         />
       </template>
 
@@ -130,7 +147,12 @@
           <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ props.row.QTY }}
-            <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
+            <q-popup-edit
+              v-model="props.row.QTY"
+              buttons
+              v-if="!props.row.UNIQUE"
+              @save="(value, initialValue) => saveQTY(props.row.__index, value, initialValue)"
+            >
               <q-list>
                 <q-item>
                   <q-item-section>
@@ -166,7 +188,7 @@
 </template>
 
 <script>
-import { findIndex } from "lodash";
+import { findIndex, clone } from "lodash";
 import { eventHub } from "../eventhub";
 import emailStockCount from "../mailer";
 import printJS from "print-js";
@@ -203,6 +225,15 @@ export default {
           label: "Omschr. 1",
           align: "left",
           field: row => row.DESC1,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Ongeteld",
+          align: "left",
+          field: row => row.QTY,
           format: val => `${val}`,
           sortable: true
         },
@@ -263,6 +294,7 @@ export default {
       code: "",
       reading: false,
       genList: false,
+      listType: "counted",
       chooseEmail: false,
       emailaddress: this.$config.email.default_email
     };
@@ -323,13 +355,25 @@ export default {
           this.pagination.rowsNumber = res.data.totalCount;
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
-
+         
           this.tableData = res.data.results.reduce((acc, p) => {
-            const s = this.selected.find(s => s.ITEMNO === p.ITEMNO);
-            if (s) return acc;
-            p.QTY = 0;
-            acc.push(p);
-            return acc;
+            const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
+  
+            if (!s) {
+              p.QTY = p.STKLEVEL;
+              acc.push(p);
+              return acc;
+            }
+
+            if (p.UNIQUE) {
+              return acc;
+            } else {
+              p.QTY = p.STKLEVEL - s.QTY;
+              if (!p.QTY) return acc;
+
+              acc.push(p);
+              return acc;
+            }
           }, []);
         })
         .catch(() => {})
@@ -380,9 +424,18 @@ export default {
     },
 
     updateSelected(itemnumber) {
-      const s = this.selected.find(p => p.ITEMNO === itemnumber);
+      let s = this.selected.find(p => p.ITEMNO === itemnumber);
+      let p = this.tableData.find(p => p.ITEMNO === itemnumber);
+
       if (s && !s.UNIQUE) {
-        s.QTY += 1;
+        s.QTY++;
+        if (p) {
+          p.QTY--;
+          if (!p.QTY) {
+            const index = findIndex(this.tableData, { ITEMNO: itemnumber });
+            this.tableData.splice(index, 1);
+          }
+        }
         this.$store.commit("saveStockCount", this.selected);
         return;
       } else if (s) {
@@ -396,14 +449,18 @@ export default {
         return;
       }
 
-      let p = this.tableData.find(p => p.ITEMNO === itemnumber);
       if (p) {
-        p.QTY = 1;
-        this.selected.push(p);
+        s = clone(p);
+        s.QTY = 1;
+        p.QTY--;
+        this.selected.push(s);
         this.$store.commit("saveStockCount", this.selected);
         const index = findIndex(this.tableData, { ITEMNO: itemnumber });
-        this.tableData.splice(index, 1);
-        this.pagination.rowsNumber--;
+
+        if (p.UNIQUE || !p.QTY) {
+          this.tableData.splice(index, 1);
+        }
+
         return;
       }
 
@@ -419,7 +476,7 @@ export default {
           return;
         }
 
-        p.QTY = 1;
+        p.QTY = p.STKLEVEL;
         this.selected.push(p);
         this.$store.commit("saveStockCount", this.selected);
       });
@@ -427,12 +484,36 @@ export default {
 
     incrementQty: function(index) {
       this.selected[index].QTY++;
-      this.$store.commit("saveStockCount", this.selected);
     },
 
     decrementQty: function(index) {
       if (this.selected[index].QTY === 1) return;
       this.selected[index].QTY--;
+    },
+
+    saveQTY(index, value, initialValue) {
+      let p = this.tableData.find(
+        p => p.ITEMNO === this.selected[index].ITEMNO
+      );
+
+      if (p) {
+        p.QTY = p.STKLEVEL - value;
+        if (!p.QTY) {
+          const pIndex = findIndex(this.tableData, { ITEMNO: p.ITEMNO });
+          this.tableData.splice(pIndex, 1);
+        }
+      } else {
+        // put back product on uncounted list
+        p = clone(this.selected[index]);
+        p.QTY = p.STKLEVEL - value;
+        this.tableData.push(p);
+
+        this.onRequest({
+          pagination: this.pagination,
+          filter: undefined
+        });
+      }
+
       this.$store.commit("saveStockCount", this.selected);
     },
 
@@ -446,35 +527,53 @@ export default {
     },
 
     print() {
+      const properties = [
+        { field: "ITEMNO", displayName: "Artikelnummer" },
+        { field: "PGROUP", displayName: "Productgroep" },
+        { field: "GRPCODE", displayName: "Subgroep" },
+        { field: "DESC1", displayName: "Omschrijving" },
+        { field: "STKLEVEL", displayName: "Voorraad" }
+      ];
+
+      if (this.listType === "counted") {
+        properties.push({ field: "QTY", displayName: "Telling" });
+      }
+
       printJS({
-        printable: this.selected,
+        printable: this.listType === "counted" ? this.selected : this.tableData,
         type: "json",
-        properties: [
-          { field: "ITEMNO", displayName: "Artikelnummer" },
-          { field: "PGROUP", displayName: "Productgroep" },
-          { field: "GRPCODE", displayName: "Subgroep" },
-          { field: "DESC1", displayName: "Omschrijving" },
-          { field: "STKLEVEL", displayName: "Voorraad" },
-          { field: "QTY", displayName: "Telling" }
-        ],
-        documentTitle: "Tellijst"
+        properties,
+        documentTitle:
+          this.listType === "counted"
+            ? "Tellijst artikelen"
+            : "Ongetelde artikelen"
       });
     },
 
     clear() {
       this.$store.commit("saveStockCount", []);
       this.selected = [];
+
+      this.onRequest({
+        pagination: this.pagination,
+        filter: undefined
+      });
     },
 
     email() {
+      const list = this.listType === "counted" ? this.selected : this.tableData;
+      const subject =
+        this.listType === "counted"
+          ? "Tellijst artikelen"
+          : "Ongetelde artikelen";
       this.chooseEmail = false;
       eventHub.$emit("before-request");
-      return emailStockCount(this.$store.state.stockCount, this.emailaddress)
+      return emailStockCount(list, this.emailaddress)
         .then(info => {
           this.$notify({
             group: "api",
-            title: `Tellijst verstuurd.`,
-            text: `De tellijst met ${this.$store.state.stockCount.length} producten is verzonden.`,
+            title: `Lijst is verstuurd.`,
+            text: `De lijst met ${list.length} producten is verzonden.`,
             type: "success",
             duration: 5000
           });
