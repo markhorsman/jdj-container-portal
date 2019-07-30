@@ -42,16 +42,6 @@
       class="float-left"
       style="width: 49%;"
     >
-      <!-- <template v-slot:top-left>
-        <q-btn
-          dense
-          color="primary"
-          :disable="loading || !selected"
-          label="Tellijst genereren"
-          @click="genList"
-        />
-      </template> -->
-
       <template v-slot:top-right>
         <q-input
           borderless
@@ -70,16 +60,67 @@
     <q-table
       title="Geteld"
       :data="selected"
-      :columns="columns"
+      :columns="selectedColumns"
       row-key="ITEMNO"
       class="float-right"
       style="width: 49%;"
     >
+      <template v-slot:top-left>
+        <q-btn
+          dense
+          color="primary"
+          :disabled="!selected.length"
+          label="Tellijst genereren"
+          @click="genList"
+        />
+      </template>
+
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
+          <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
+          <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE"/>
+            {{ props.row.QTY }}
+            <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index)"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTY }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index)"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+          </q-td>
+          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
+        </q-tr>
+      </template>
     </q-table>
   </div>
 </template>
 
 <script>
+
+import { findIndex } from 'lodash'
+
 export default {
   data() {
     return {
@@ -120,6 +161,44 @@ export default {
           sortable: true
         }
       ],
+      selectedColumns: [
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DESC1",
+          required: true,
+          label: "Omschr. 1",
+          align: "left",
+          field: row => row.DESC1,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "STKLEVEL",
+          required: true,
+          label: "Voorraad",
+          align: "left",
+          field: row => row.STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        }
+      ],
       tableData: [],
       subgroups: [],
       subgroupOptions: [],
@@ -132,7 +211,7 @@ export default {
   },
 
   mounted() {
-      this.$store.commit("saveStockCount", []); 
+    this.$store.commit("saveStockCount", []);
     document.addEventListener("keypress", this.getInput);
 
     this.getSubGroups();
@@ -171,7 +250,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
         )
         .then(res => {
           this.pagination.page = page;
@@ -180,7 +259,13 @@ export default {
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
 
-          this.tableData = res.data.results;
+          this.tableData = res.data.results.reduce((acc, p) => {
+            const s = this.selected.find(s => s.ITEMNO === p.ITEMNO);
+            if (s) return acc;
+            p.QTY = 0;
+            acc.push(p);
+            return acc;
+          }, []);
         })
         .catch(() => {})
         .finally(() => (this.loading = false));
@@ -202,23 +287,19 @@ export default {
         .catch(() => {});
     },
 
+    getProduct: function(itemnumber) {
+      return this.$api
+        .get(
+          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemnumber}' and STATUS eq 0&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
+        )
+        .then(res => (res.data ? res.data[0] : null));
+    },
+
     getInput: function(e) {
       e.stopImmediatePropagation();
       if (e.keyCode === 13 && this.code.length >= 5) {
-        this.filter = this.code;
+        this.updateSelected(this.code);
         this.code = "";
-
-        this.onRequest({
-          pagination: this.pagination,
-          filter: this.filter
-        }).then(() => {
-          const isAdded = this.selected.find(p => p.ITEMNO === this.code);
-          const p = this.tableData.find(p => p.ITEMNO === this.filter);
-          if (p) {
-              this.selected.push(p);
-              this.$store.commit("saveStockCount", this.selected);
-          }
-        });
       } else {
         this.code += e.key;
       }
@@ -233,6 +314,62 @@ export default {
       }
     },
 
+    updateSelected(itemnumber) {
+      const s = this.selected.find(p => p.ITEMNO === itemnumber);
+      if (s && !s.UNIQUE) {
+        s.QTY += 1;
+        this.$store.commit("saveStockCount", this.selected);
+        return;
+      } else if (s) {
+        this.$notify({
+          group: "api",
+          title: `Artikel in tellijst`,
+          text: `Het unieke artikel met nummer (${itemnumber}) staat al in de tellijst`,
+          type: "error",
+          duration: 5000
+        });
+        return;
+      }
+
+      let p = this.tableData.find(p => p.ITEMNO === itemnumber);
+      if (p) {
+        p.QTY = 1;
+        this.selected.push(p);
+        this.$store.commit("saveStockCount", this.selected);
+        const index = findIndex(this.tableData, { ITEMNO: itemnumber });
+        this.tableData.splice(index, 1);
+        return;
+      }
+
+      this.getProduct(itemnumber).then(p => {
+        if (!p) {
+          this.$notify({
+            group: "api",
+            title: `Artikel niet gevonden.`,
+            text: `Artikel met nummer (${itemnumber}) niet gevonden`,
+            type: "error",
+            duration: 5000
+          });
+          return;
+        }
+
+        p.QTY = 1;
+        this.selected.push(p);
+        this.$store.commit("saveStockCount", this.selected);
+      });
+    },
+
+    incrementQty: function(index) {
+      this.selected[index].QTY++;
+      this.$store.commit("saveStockCount", this.selected);
+    },
+
+    decrementQty: function(index) {
+      if (this.selected[index].QTY === 1) return;
+      this.selected[index].QTY--;
+      this.$store.commit("saveStockCount", this.selected);
+    },
+
     filterSubgroups(val, update, abort) {
       update(() => {
         const needle = val.toLowerCase();
@@ -243,7 +380,9 @@ export default {
     },
 
     genList() {
-      
+      console.log("gen list called");
+      this.selected = [];
+      this.$store.commit("saveStockCount", this.selected);
     }
   },
 
