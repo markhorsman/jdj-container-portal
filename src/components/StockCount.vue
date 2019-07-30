@@ -1,5 +1,51 @@
 <template>
   <div class="q-pa-md">
+    <q-dialog v-model="genList" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="fas fa-calculator" color="primary" text-color="white" />
+          <span class="q-ml-sm">Wil je de tellijst mailen of printen?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
+          <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
+          <q-btn flat label="Lijst leegmaken" color="danger" v-close-popup @click="clear" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="chooseEmail" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="email" color="primary" text-color="white" />
+          <span class="q-ml-sm">Naar wie mag de e-mail verstuurd worden?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-input
+            v-model="emailaddress"
+            filled
+            type="email"
+            placeholder="E-mailadres"
+            class="full-width"
+            error-message="Ongeldig E-mailadres"
+            :error="!isValidEmail"
+            :rules="[val => !!val || 'E-mailadres is verplicht']"
+          />
+          <br />
+          <q-btn
+            flat
+            label="Versturen"
+            color="primary"
+            icon="email"
+            @click="email"
+            :disabled="!emailaddress.length || !isValidEmail"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-select
       outlined
       clearable
@@ -73,7 +119,7 @@
           color="primary"
           :disabled="!selected.length"
           label="Tellijst genereren"
-          @click="email"
+          @click="genList = true"
         />
       </template>
 
@@ -121,8 +167,9 @@
 
 <script>
 import { findIndex } from "lodash";
-import { eventHub } from '../eventhub'
+import { eventHub } from "../eventhub";
 import emailStockCount from "../mailer";
+import printJS from "print-js";
 
 export default {
   data() {
@@ -214,7 +261,10 @@ export default {
       filter: "",
       loading: false,
       code: "",
-      reading: false
+      reading: false,
+      genList: false,
+      chooseEmail: false,
+      emailaddress: this.$config.email.default_email
     };
   },
 
@@ -228,6 +278,13 @@ export default {
       pagination: this.pagination,
       filter: undefined
     });
+  },
+
+  computed: {
+    isValidEmail() {
+      var re = /\S+@\S+\.\S+/;
+      return re.test(this.emailaddress);
+    }
   },
 
   methods: {
@@ -346,6 +403,7 @@ export default {
         this.$store.commit("saveStockCount", this.selected);
         const index = findIndex(this.tableData, { ITEMNO: itemnumber });
         this.tableData.splice(index, 1);
+        this.pagination.rowsNumber--;
         return;
       }
 
@@ -387,9 +445,31 @@ export default {
       });
     },
 
+    print() {
+      printJS({
+        printable: this.selected,
+        type: "json",
+        properties: [
+          { field: "ITEMNO", displayName: "Artikelnummer" },
+          { field: "PGROUP", displayName: "Productgroep" },
+          { field: "GRPCODE", displayName: "Subgroep" },
+          { field: "DESC1", displayName: "Omschrijving" },
+          { field: "STKLEVEL", displayName: "Voorraad" },
+          { field: "QTY", displayName: "Telling" }
+        ],
+        documentTitle: "Tellijst"
+      });
+    },
+
+    clear() {
+      this.$store.commit("saveStockCount", []);
+      this.selected = [];
+    },
+
     email() {
-      eventHub.$emit('before-request');
-      return emailStockCount(this.$store.state.stockCount)
+      this.chooseEmail = false;
+      eventHub.$emit("before-request");
+      return emailStockCount(this.$store.state.stockCount, this.emailaddress)
         .then(info => {
           this.$notify({
             group: "api",
@@ -398,9 +478,6 @@ export default {
             type: "success",
             duration: 5000
           });
-          this.$store.commit("saveStockCount", []);
-          this.selected = [];
-          // eventHub.$emit('email-stock-count-success');
         })
         .catch(e => {
           this.$notify({
@@ -412,9 +489,9 @@ export default {
           });
         })
         .finally(() => {
-          eventHub.$emit('after-response');
+          eventHub.$emit("after-response");
         });
-    },
+    }
   },
 
   destroyed() {

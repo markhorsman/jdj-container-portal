@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 import config from '../config'
 
-const emailStockCount = products => {
+const emailStockCount = (products, email) => {
     let body = `
     <p>Beste heer/mevrouw,</p>
     <p>Hierbij ontvangt u een tellijst van artikelen:</p>
@@ -39,7 +39,7 @@ const emailStockCount = products => {
 
     const mailOptions = {
         from: config.email.from, // sender address
-        to: config.email.default_email, // list of receivers
+        to: email, // list of receivers
         subject: 'Tellijst', // Subject line
         html: body, // html body
     };

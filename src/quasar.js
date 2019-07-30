@@ -51,6 +51,7 @@ import {
   QCardActions,
   QSeparator,
   QPopupEdit,
+  QField,
   Loading,
   ClosePopup,
 
@@ -102,6 +103,7 @@ Vue.use(Quasar, {
     QCardActions,
     QSeparator,
     QPopupEdit,
+    QField,
   },
   directives: {
     ClosePopup,

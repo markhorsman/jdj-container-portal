@@ -20,6 +20,7 @@
     "moment": "^2.24.0",
     "nfc-pcsc": "^0.6.2",
     "nodemailer": "^6.3.0",
+    "print-js": "^1.0.61",
     "quasar": "^1.0.0",
     "quasar-extras": "^2.0.9",
     "vue": "^2.6.10",
