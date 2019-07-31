@@ -50,6 +50,7 @@
             @click="email"
             :disabled="!emailaddress.length || !isValidEmail"
           />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>

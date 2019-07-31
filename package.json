@@ -1,6 +1,10 @@
 {
-  "name": "rfid-vue",
-  "version": "0.1.0",
+  "name": "jdj-container-portal",
+  "version": "0.1.1",
+  "author": "Mark Horsman <deadelus1988@gmail.com>",
+  "keywords": ["javascript, rfid, vue.js, quasar"],
+  "license": "UNLICENSED",
+  "description": "Portale extension for Inpshire rental software",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -9,8 +13,7 @@
     "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
-    "postuninstall": "electron-builder install-app-deps",
-    "rebuild": "electron-rebuild -f -w nfc-pcsc"
+    "postuninstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
@@ -36,7 +39,6 @@
     "babel-eslint": "^10.0.1",
     "babel-plugin-transform-imports": "1.5.0",
     "electron": "^3.0.0",
-    "electron-rebuild": "^1.8.5",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.0.0",
     "stylus": "^0.54.5",
