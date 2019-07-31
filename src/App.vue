@@ -14,6 +14,20 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="confirmClose" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="close" color="primary" text-color="white" />
+          <span class="q-ml-sm">Weet je zeker dat je wilt afsluiten?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Annuleren" color="primary" v-close-popup />
+          <q-btn flat label="Afsluiten" color="danger" @click="closeApp" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-layout
       view="hHh Lpr lff"
       container
@@ -32,7 +46,7 @@
           <q-space />
           <q-btn dense flat icon="minimize" @click="minimize" />
           <q-btn dense flat icon="crop_square" @click="maximize" />
-          <q-btn dense flat icon="close" @click="closeApp" />
+          <q-btn dense flat icon="close" @click="confirmClose = true" />
         </q-bar>
 
         <q-toolbar>
@@ -129,6 +143,7 @@
 
         <div class="q-mini-drawer absolute" style="top: 15px; right: -20px;">
           <q-btn
+            v-if="drawer"
             dense
             round
             unelevated
@@ -158,6 +173,7 @@ export default {
       drawer: this.$q.platform.is.desktop,
       miniState: false,
       confirmLogout: false,
+      confirmClose: false,
       maxHeight: win.getContentSize()[1]
     };
   },
