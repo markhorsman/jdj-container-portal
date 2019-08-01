@@ -14,7 +14,7 @@
         </div>
       </q-timeline-entry>
 
-      <q-timeline-entry title="Samen veilig!" subtitle="22 mei, 2019">
+      <q-timeline-entry title="Samen veilig!" subtitle="5 maart, 2019">
         <div>
           <p>
             Samen veilig! Wij zijn trots op alle jaarlijkse winnaars van de Gouden Helm.
@@ -31,7 +31,7 @@
         </div>
       </q-timeline-entry>
 
-      <q-timeline-entry title="Folding stairways" subtitle="22 mei, 2019">
+      <q-timeline-entry title="Folding stairways" subtitle="15 december, 2018">
         <div>
           <p>
             From our team at JLA loading arm service: 
