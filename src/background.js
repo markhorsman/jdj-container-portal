@@ -6,48 +6,48 @@ import {
   installVueDevtools
 } from 'vue-cli-plugin-electron-builder/lib'
 
-const log = require('electron-log')
+// const log = require('electron-log')
 const { autoUpdater } = require("electron-updater")
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-autoUpdater.logger = log
-autoUpdater.logger.transports.file.level = 'debug'
-log.info('App starting...')
+// autoUpdater.logger = log
+// autoUpdater.logger.transports.file.level = 'debug'
+// log.info('App starting...')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
 
-function sendStatusToWindow(text) {
-  log.info(text);
-  win.webContents.send('message', text);
-}
+// function sendStatusToWindow(text) {
+//   log.info(text);
+//   win.webContents.send('message', text);
+// }
 
 // Standard scheme must be registered before the app is ready
 protocol.registerStandardSchemes(['app'], { secure: true })
 
-autoUpdater.on('checking-for-update', () => {
-  sendStatusToWindow('Checking for update...');
-})
-autoUpdater.on('update-available', (info) => {
-  sendStatusToWindow('Update available.');
-})
-autoUpdater.on('update-not-available', (info) => {
-  sendStatusToWindow('Update not available.');
-})
-autoUpdater.on('error', (err) => {
-  sendStatusToWindow('Error in auto-updater. ' + err);
-})
-autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = "Download speed: " + progressObj.bytesPerSecond;
-  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-  sendStatusToWindow(log_message);
-})
-autoUpdater.on('update-downloaded', (info) => {
-  sendStatusToWindow('Update downloaded');
-});
+// autoUpdater.on('checking-for-update', () => {
+//   sendStatusToWindow('Checking for update...');
+// })
+// autoUpdater.on('update-available', (info) => {
+//   sendStatusToWindow('Update available.');
+// })
+// autoUpdater.on('update-not-available', (info) => {
+//   sendStatusToWindow('Update not available.');
+// })
+// autoUpdater.on('error', (err) => {
+//   sendStatusToWindow('Error in auto-updater. ' + err);
+// })
+// autoUpdater.on('download-progress', (progressObj) => {
+//   let log_message = "Download speed: " + progressObj.bytesPerSecond;
+//   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+//   log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+//   sendStatusToWindow(log_message);
+// })
+// autoUpdater.on('update-downloaded', (info) => {
+//   sendStatusToWindow('Update downloaded');
+// });
 
 function createWindow() {
   // Create the browser window.
@@ -98,7 +98,7 @@ app.on('activate', () => {
 app.on('ready', async () => {
   // autoUpdater.checkForUpdatesAndNotify()
   createWindow()
-  autoUpdater.checkForUpdates()
+  autoUpdater.checkForUpdatesAndNotify()
 
   await installVueDevtools()
   // if (isDevelopment && !process.env.IS_TEST) {
