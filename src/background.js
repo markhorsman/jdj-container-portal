@@ -1,6 +1,6 @@
 'use strict'
 
-import autoUpdater from 'electron-updater'
+const { autoUpdater } = require("electron-updater")
 import { app, protocol, BrowserWindow } from 'electron'
 import {
   createProtocol,

@@ -1,6 +1,6 @@
 {
   "name": "jdj-container-portal",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "author": "Mark Horsman <deadelus1988@gmail.com>",
   "keywords": [
     "javascript, rfid, vue.js, quasar"
@@ -19,8 +19,7 @@
     "electron:build": "vue-cli-service electron:build -p always",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
-    "postuninstall": "electron-builder install-app-deps",
-    "release": "build --win"
+    "postuninstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",

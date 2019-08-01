@@ -1,7 +1,7 @@
 <template>
   <div class="q-px-lg q-pb-md">
     <q-timeline color="secondary">
-      <q-timeline-entry heading>Het laatste nieuws</q-timeline-entry>
+      <q-timeline-entry heading>Blog</q-timeline-entry>
 
       <q-timeline-entry title="Full functional testing" subtitle="22 mei, 2019">
         <div>
