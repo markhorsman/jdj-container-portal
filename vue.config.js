@@ -8,13 +8,22 @@ module.exports = {
         "copyright": "Copyright © year ${author}",
         "win": {
           "target": "nsis",
-          "publish": ["github"]
+          "publish": {
+            "provider": "github",
+            "owner": "markhorsman",
+            "repo": "jdj-container-portal"
+          }
         },
         "linux": {
           "target": [
             "deb",
             "AppImage"
           ],
+          "publish": {
+            "provider": "github",
+            "owner": "markhorsman",
+            "repo": "jdj-container-portal"
+          },
           "icon": "./build/icons/png/256x256.png"
         }
       },

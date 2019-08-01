@@ -12,7 +12,7 @@ const { autoUpdater } = require("electron-updater")
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 autoUpdater.logger = log
-autoUpdater.logger.transports.file.level = 'info'
+autoUpdater.logger.transports.file.level = 'debug'
 log.info('App starting...')
 
 // Keep a global reference of the window object, if you don't, the window will
