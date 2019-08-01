@@ -148,7 +148,7 @@
             dense
             round
             unelevated
-            color="orange"
+            color="primary"
             :icon="miniState ? 'chevron_right' : 'chevron_left'"
             @click="miniState = !miniState"
           />
