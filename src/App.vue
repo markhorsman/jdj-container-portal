@@ -40,6 +40,7 @@
         <q-bar class="q-electron-drag">
           <q-badge v-if="showUser">{{ this.$store.state.user.USERNAME }}</q-badge>
           <q-badge v-if="showUser">{{ this.$store.state.user.DEPOT }}</q-badge>
+          <q-badge>Versie: {{ version }}</q-badge>
           <q-space />
           <q-icon name="build" />
           <div>Container Tools</div>
@@ -166,6 +167,8 @@ import { eventHub } from "./eventhub";
 const { remote } = require("electron");
 const win = remote.getCurrentWindow();
 
+import { version } from '../package.json';
+
 export default {
   name: "app",
   data() {
@@ -174,7 +177,8 @@ export default {
       miniState: false,
       confirmLogout: false,
       confirmClose: false,
-      maxHeight: win.getContentSize()[1]
+      maxHeight: win.getContentSize()[1],
+      version
     };
   },
   computed: {
