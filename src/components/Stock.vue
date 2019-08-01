@@ -94,6 +94,8 @@
 </template>
 
 <script>
+import { sortBy } from 'lodash'
+
 export default {
   name: "Stock",
 
@@ -258,26 +260,26 @@ export default {
     getGroups: function() {
       Promise.all([
         this.$api.get(
-          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME`
+          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&orderby=CODE asc&fields=CODE,NAME`
         ),
         this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&orderby=CODE asc&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
         )
       ])
         .then(res => {
           const all = res[0].data;
-          this.groups.main = res[1].data.reduce((acc, grp) => {
+          this.groups.main = sortBy(res[1].data.reduce((acc, grp) => {
             if (!acc.find(p => p.value === grp.PGROUP)) {
               const group = all.find(p => p.CODE === grp.PGROUP);
-              if (group) acc.push({ label: group.NAME, value: group.CODE });
+              if (group) acc.push({ label: `${grp.CODE} - ${grp.NAME}`, value: group.CODE });
             }
             return acc;
-          }, []);
+          }, []), 'label');
 
-          this.groups.sub = res[1].data.reduce((acc, grp) => {
-            acc.push({ label: grp.NAME, value: grp.CODE, pgroup: grp.PGROUP });
+          this.groups.sub = sortBy(res[1].data.reduce((acc, grp) => {
+            acc.push({ label: `${grp.CODE} - ${grp.NAME}`, value: grp.CODE, pgroup: grp.PGROUP });
             return acc;
-          }, []);
+          }, []), 'label');
 
           this.groupOptions = this.groups.main;
           this.subgroupOptions = this.groups.sub;
