@@ -187,6 +187,10 @@ export default {
     }
   },
   methods: {
+    handleResize() {
+      this.maxHeight = win.getContentSize()[1];
+    },
+
     logout() {
       this.$store.commit("logout");
     },
@@ -237,12 +241,16 @@ export default {
     eventHub.$on("request-error", this.hideSpinner);
     eventHub.$on("after-response", this.hideSpinner);
     eventHub.$on("response-error", this.hideSpinner);
+
+    window.addEventListener('resize', this.handleResize);
   },
   beforeDestroy() {
     eventHub.$off("before-request", this.showSpinner);
     eventHub.$off("request-error", this.hideSpinner);
     eventHub.$off("after-response", this.hideSpinner);
     eventHub.$off("response-error", this.hideSpinner);
+
+    window.removeEventListener('resize', this.handleResize);
   }
 };
 </script>
