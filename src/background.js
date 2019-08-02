@@ -54,7 +54,7 @@ function createWindow() {
   win = new BrowserWindow({ width: 1360, height: 900, show: false, useContentSize: true, frame: false })
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
-    win.webContents.openDevTools()
+    win.webContents.openDevTools({ mode: 'undocked' })
     // Load the url of the dev server if in development mode
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
     // if (!process.env.IS_TEST) win.webContents.openDevTools()

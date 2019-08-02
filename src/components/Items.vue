@@ -4,7 +4,7 @@
       title="Artikelen"
       :data="tableData"
       :columns="columns"
-      row-key="ITEMNO"
+      row-key="RECID"
       :loading="loading"
       :filter="filter"
       :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 0]"
@@ -199,7 +199,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO`
+          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO`
         )
         .then(res => {
           this.pagination.page = page;
