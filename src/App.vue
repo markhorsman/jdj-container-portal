@@ -119,6 +119,15 @@
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item clickable tag="a" to="/stocktransfer">
+              <q-item-section avatar>
+                <q-icon name="fas fa-exchange-alt" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Artikel toevoegen</q-item-label>
+                <q-item-label caption>Depot transfer</q-item-label>
+              </q-item-section>
+            </q-item>
             <q-item clickable tag="a" to="/stockcount">
               <q-item-section avatar>
                 <q-icon name="fas fa-calculator" />
@@ -176,7 +185,7 @@ import { eventHub } from "./eventhub";
 const { remote } = require("electron");
 const win = remote.getCurrentWindow();
 
-import { version } from '../package.json';
+import { version } from "../package.json";
 
 export default {
   name: "app",
@@ -251,7 +260,7 @@ export default {
     eventHub.$on("after-response", this.hideSpinner);
     eventHub.$on("response-error", this.hideSpinner);
 
-    window.addEventListener('resize', this.handleResize);
+    window.addEventListener("resize", this.handleResize);
   },
   beforeDestroy() {
     eventHub.$off("before-request", this.showSpinner);
@@ -259,7 +268,7 @@ export default {
     eventHub.$off("after-response", this.hideSpinner);
     eventHub.$off("response-error", this.hideSpinner);
 
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener("resize", this.handleResize);
   }
 };
 </script>

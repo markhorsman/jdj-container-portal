@@ -10,6 +10,7 @@ import Home from '../components/Home.vue'
 import Stock from '../components/Stock.vue'
 import StockCount from '../components/StockCount.vue'
 import CustomerContact from '../components/CustomerContact.vue'
+import StockTransfer from '../components/StockTransfer.vue'
 
 const routes = [
   {
@@ -52,6 +53,14 @@ const routes = [
     path: '/stock',
     name: 'Stock',
     component: Stock,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/stocktransfer',
+    name: 'StockTransfer',
+    component: StockTransfer,
     meta: {
       requiresAuth: true
     }

@@ -12,7 +12,7 @@
           <div class="text-h6">Klant contact toevoegen</div>
 
           <div class="row q-col-gutter-sm">
-            <div class="col-sm-12 col-md6 col-4">
+            <div class="col-xs-12 col-md6 col-4">
               <q-select
                 ref="customer"
                 outlined
@@ -39,7 +39,7 @@
           </div>
 
           <div class="row q-col-gutter-sm">
-            <div class="col-sm-12 col-md-6 col-4">
+            <div class="col-xs-12 col-md-6 col-4">
               <q-input
                 ref="nameFirst"
                 square
@@ -57,7 +57,7 @@
               </q-input>
             </div>
 
-            <div class="col-sm-12 col-md-6 col-4">
+            <div class="col-xs-12 col-md-6 col-4">
               <q-input
                 ref="nameFamily"
                 square
