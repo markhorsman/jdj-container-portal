@@ -14,6 +14,7 @@
           <div class="row q-col-gutter-sm">
             <div class="col-sm-12 col-md6 col-4">
               <q-select
+                ref="customer"
                 outlined
                 v-model="customer"
                 use-input
@@ -40,6 +41,7 @@
           <div class="row q-col-gutter-sm">
             <div class="col-sm-12 col-md-6 col-4">
               <q-input
+                ref="nameFirst"
                 square
                 outlined
                 v-model="nameFirst"
@@ -57,6 +59,7 @@
 
             <div class="col-sm-12 col-md-6 col-4">
               <q-input
+                ref="nameFamily"
                 square
                 outlined
                 v-model="nameFamily"
@@ -74,6 +77,7 @@
 
             <div class="col-xs-12 col-md-6 col-8">
               <q-input
+                ref="company"
                 square
                 outlined
                 v-model="company"
@@ -93,6 +97,7 @@
           <div class="row q-col-gutter-sm">
             <div class="col-xs-12 col-md-6 col-8">
               <q-input
+                ref="phone"
                 square
                 outlined
                 v-model="phone"
@@ -108,6 +113,7 @@
             </div>
             <div class="col-xs-12 col-md-6 col-8">
               <q-input
+                ref="email"
                 square
                 outlined
                 v-model="email"
@@ -126,13 +132,14 @@
           <div class="row q-col-gutter-sm">
             <div class="col-xs-12 col-md-6 col-8">
               <q-input
+                ref="uid"
                 square
                 outlined
                 v-model="uid"
                 disabled
                 label="RFID badge"
                 :hint="showRFIDHint"
-                :rules="[val => !!val || 'RFID badge is verplicht']"
+                :rules="[validateUID]"
               >
                 <template v-slot:prepend>
                   <q-icon name="nfc" />
@@ -158,6 +165,7 @@
 
 <script>
 import { NFC } from "nfc-pcsc";
+import { Promise } from "q";
 
 export default {
   name: "CustomerContact",
@@ -168,11 +176,11 @@ export default {
       readers: null,
       readerName: null,
       uid: null,
-      nameFirst: "",
-      nameFamily: "",
-      company: "",
-      phone: "",
-      email: "",
+      nameFirst: null,
+      nameFamily: null,
+      company: null,
+      phone: null,
+      email: null,
       customers: [],
       customerOptions: [],
       customer: null
@@ -230,13 +238,19 @@ export default {
 
   methods: {
     onReset() {
-      this.nameFirst = "";
-      this.nameFamily = "";
-      this.company = "";
-      this.phone = "";
-      this.email = "";
+      this.nameFirst = null;
+      this.nameFamily = null;
+      this.company = null;
+      this.phone = null;
+      this.email = null;
+      this.uid = null;
 
-      this.$refs.input.resetValidation();
+      this.$refs.nameFirst.resetValidation();
+      this.$refs.nameFamily.resetValidation();
+      this.$refs.company.resetValidation();
+      this.$refs.phone.resetValidation();
+      this.$refs.email.resetValidation();
+      this.$refs.uid.resetValidation();
     },
 
     saveCustomer() {
@@ -257,7 +271,6 @@ export default {
           }
         )
         .then(res => {
-          console.log(res);
           this.$notify({
             group: "api",
             title: "Klant contact",
@@ -265,17 +278,14 @@ export default {
             type: "success",
             duration: 10000
           });
-
-          this.onReset();
         })
         .catch(err => {
-          console.log(err);
           this.$notify({
             group: "api",
             title: "Oeps!",
             text:
               "Er is iets misgegaan tijdens het aanmaken van een nieuw contact",
-            type: "danger",
+            type: "error",
             duration: 10000
           });
         });
@@ -302,6 +312,27 @@ export default {
           }
         })
         .catch(e => {});
+    },
+
+    validateUID(val) {
+      if (!val)
+        return Promise.resolve(false || "Plaats een badge op de RFID reader");
+      if (val.length !== 8)
+        return Promise.resolve(false || "Ongeldige UID (8 karakters)");
+
+      return this.$api
+        .get(
+          `${this.$config.container_api_base_url}customercontact/${this.uid}`,
+          { auth: this.$config.container_api_basic_auth }
+        )
+        .then(res => {
+          return res && res.data && res.data.data && res.data.data.length
+            ? Promise.resolve("RFID badge al gekoppeld aan een contact")
+            : Promise.resolve(true);
+        })
+        .catch(() => {
+          return Promise.resolve(true);
+        });
     },
 
     filterCustomers(val, update, abort) {
