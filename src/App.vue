@@ -128,6 +128,15 @@
                 <q-item-label caption>Tellijsten genereren</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item clickable tag="a" to="/customercontact">
+              <q-item-section avatar>
+                <q-icon name="fas fa-id-badge" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Contacten</q-item-label>
+                <q-item-label caption>Contact toevoegen</q-item-label>
+              </q-item-section>
+            </q-item>
 
             <q-separator />
 

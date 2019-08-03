@@ -9,6 +9,7 @@ import Items from '../components/Items.vue'
 import Home from '../components/Home.vue'
 import Stock from '../components/Stock.vue'
 import StockCount from '../components/StockCount.vue'
+import CustomerContact from '../components/CustomerContact.vue'
 
 const routes = [
   {
@@ -59,6 +60,14 @@ const routes = [
     path: '/stockcount',
     name: 'StockCount',
     component: StockCount,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/customercontact',
+    name: 'CustomerContact',
+    component: CustomerContact,
     meta: {
       requiresAuth: true
     }

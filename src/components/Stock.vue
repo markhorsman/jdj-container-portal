@@ -260,7 +260,7 @@ export default {
     getGroups: function() {
       Promise.all([
         this.$api.get(
-          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&orderby=CODE asc&fields=CODE,NAME`
+          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`
         ),
         this.$api.get(
           `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&orderby=CODE asc&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
