@@ -8,7 +8,13 @@
       </q-card-section>
 
       <q-card-section v-if="readerName">
-        <q-form horizontal @submit="saveCustomer" @reset="onReset" class="q-gutter-md">
+        <q-form
+          horizontal
+          @submit="saveCustomer"
+          @reset="onReset"
+          class="q-gutter-md"
+          ref="contactForm"
+        >
           <div class="text-h6">Klant contact toevoegen</div>
 
           <div class="row q-col-gutter-sm">
@@ -144,6 +150,9 @@
                 <template v-slot:prepend>
                   <q-icon name="nfc" />
                 </template>
+                <template v-slot:append>
+                  <q-icon name="fas fa-asterisk" style="font-size: 0.5em;" />
+                </template>
               </q-input>
             </div>
           </div>
@@ -271,6 +280,9 @@ export default {
           }
         )
         .then(res => {
+          this.$refs.contactForm.resetValidation();
+          this.$refs.contactForm.reset();
+
           this.$notify({
             group: "api",
             title: "Klant contact",
