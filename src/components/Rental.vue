@@ -47,7 +47,7 @@
         <br />
       </q-step>
 
-      <q-step :name="3" title="Producten scannen" icon="build" :done="step > 3">
+      <q-step :name="3" title="Artikelen scannen" icon="build" :done="step > 3">
         <ReadProduct />
         <ContractItems v-if="rentalType === 'return'" />
       </q-step>
@@ -59,22 +59,15 @@
         :done="step > 4"
       >
         <p>Controleer de lijst met producten.</p>
-        <q-list bordered separator>
-          <q-item
-            v-for="(p, index) in this.$store.state.rentalProducts"
-            clickable
-            v-bind:key="index"
-          >
-            <q-item-section>
-              <q-item-label>{{ p.ITEMNO }}</q-item-label>
-              <q-item-label caption lines="2">{{ p.DESC1 }}</q-item-label>
-            </q-item-section>
-
-            <q-item-section side bottom>
-              <q-item-label caption>{{ p.QTY }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
+        <q-table
+          v-if="products.length"
+          title="Artikelen"
+          :data="products"
+          :columns="columns"
+          :pagination.sync="pagination"
+          :rows-per-page-options="[]"
+          row-key="RECID"
+        />
         <br />
         <br />Bevestig de gekozen producten door op onderstaande knop te drukken.
       </q-step>
@@ -142,7 +135,51 @@ export default {
     return {
       step: 1,
       rentalType: "pickup",
-      confirmCancel: false
+      confirmCancel: false,
+      products: this.$store.state.rentalProducts || [],
+      pagination: {
+        descending: false,
+        page: 1,
+        rowsPerPage: 1000
+      },
+      columns: [
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DESC1",
+          required: true,
+          label: "Omschr. 1",
+          align: "left",
+          field: row => row.DESC1,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "STKLEVEL",
+          required: true,
+          label: "Voorraad",
+          align: "left",
+          field: row => row.STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        }
+      ]
     };
   },
 

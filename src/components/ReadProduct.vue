@@ -1,89 +1,195 @@
 <template>
-  <div class="qr">
+  <div class="q-pa-md">
     <p
       v-if="!products.length"
-    >Voeg producten toe met de barcode scanner door de QR code op het product te scannen.</p>
-    <br />
-    <br />
-    <q-list v-if="products.length" bordered separator>
-      <q-item v-for="(p, index) in products" v-bind:key="index">
-        <q-item-section>
-          <q-item-label>
-            {{ p.ITEMNO }}
-            <q-chip dense>
-              <q-avatar color="primary" text-color="white">{{ p.STKLEVEL }}</q-avatar>Stock
-            </q-chip>
-          </q-item-label>
-          <q-item-label caption lines="2">{{ p.DESC1 }}</q-item-label>
-        </q-item-section>
+    >Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
+    <q-table
+      v-if="products.length"
+      title="Artikelen"
+      :data="products"
+      :columns="columns"
+      :visible-columns="visibleColumns"
+      :pagination.sync="pagination"
+      row-key="RECID"
+    >
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
+          <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
+          <q-td
+            key="QTY"
+            v-if="!isRentalTypeReturn"
+            :props="props"
+            :class="props.row.UNIQUE ? 'text-bold' : ''"
+          >
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+            {{ props.row.QTY }}
+            <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index, 'QTY')"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTY }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index, 'QTY')"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+          </q-td>
 
-        <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
-          <q-item-label caption>
-            <q-input
-              v-model="p.QTYDAM"
-              type="number"
-              filled
-              hint="Besch."
-              style="max-width: 75px"
+          <q-td
+            key="QTYOK"
+            v-if="isRentalTypeReturn"
+            :props="props"
+            :class="props.row.UNIQUE ? 'text-bold' : ''"
+          >
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+            {{ !props.row.UNIQUE ? props.row.QTYOK : '' }}
+            <q-popup-edit v-model="props.row.QTYOK" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index, 'QTYOK')"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTYOK }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index, 'QTYOK')"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+            <q-checkbox
+              v-if="props.row.UNIQUE"
+              :value="!!props.row.QTYOK"
+              @input="v => toggleReturnState(v, props.row.__index, 'QTYOK')"
             />
-            <!-- <q-checkbox keep-color v-model="p.DAMAGED" label="Beschadigd?" color="red" />
-            <q-checkbox keep-color v-model="p.LOST" label="Vermist?" color="red" /> -->
-          </q-item-label>
-        </q-item-section>
+          </q-td>
 
-         <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
-          <q-item-label caption>
-            <q-input
-              v-model="p.QTYLOST"
-              type="number"
-              filled
-              hint="Verm."
-              style="max-width: 75px"
+          <q-td
+            key="QTYDAM"
+            v-if="isRentalTypeReturn"
+            :props="props"
+            :class="props.row.UNIQUE ? 'text-bold' : ''"
+          >
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+            {{ !props.row.UNIQUE ? props.row.QTYDAM : '' }}
+            <q-popup-edit v-model="props.row.QTYDAM" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index, 'QTYDAM')"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTYDAM }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index, 'QTYDAM')"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+            <q-checkbox
+              v-if="props.row.UNIQUE"
+              :value="!!props.row.QTYDAM"
+              @input="v => toggleReturnState(v, props.row.__index, 'QTYDAM')"
             />
-          </q-item-label>
-        </q-item-section>
+          </q-td>
 
-        <q-item-section v-if="isRentalTypeReturn && !p.UNIQUE" side bottom>
-          <q-item-label caption>
-            <q-input
-              v-model="p.QTYOK"
-              type="number"
-              filled
-              hint="OK"
-              style="max-width: 75px"
+          <q-td
+            key="QTYLOST"
+            v-if="isRentalTypeReturn"
+            :props="props"
+            :class="props.row.UNIQUE ? 'text-bold' : ''"
+          >
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+            {{ !props.row.UNIQUE ? props.row.QTYLOST : '' }}
+            <q-popup-edit v-model="props.row.QTYLOST" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index, 'QTYLOST')"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTYLOST }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index, 'QTYLOST')"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+            <q-checkbox
+              v-if="props.row.UNIQUE"
+              :value="!!props.row.QTYLOST"
+              @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
             />
-          </q-item-label>
-        </q-item-section>
+          </q-td>
 
-        <q-item-section v-if="!p.UNIQUE && !isRentalTypeReturn" side bottom>
-          <q-item-label caption>
-            <q-btn
-              round
-              color="primary"
-              icon="add"
-              @click="incrementQty(index)"
-              style="margin-right: 10px;"
+          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
+          <q-td key="DELETE" :props="props">
+            <q-icon
+              name="delete"
+              style="font-size: 1.5em; cursor: pointer;"
+              @click="deleteProduct(props.row.__index)"
             />
-            <q-btn
-              round
-              color="primary"
-              icon="remove"
-              @click="decrementQty(index)"
-            />
-          </q-item-label>
-        </q-item-section>
-
-        <q-item-section side bottom>
-          <q-item-label caption @click="deleteProduct(index)">{{ p.QTY }}</q-item-label>
-        </q-item-section>
-
-        <q-item-section side bottom>
-          <q-item-label caption @click="deleteProduct(index)">
-            <q-btn class="gt-xs" size="15px" flat dense round icon="delete" />
-          </q-item-label>
-        </q-item-section>
-      </q-item>
-    </q-list>
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
   </div>
 </template>
 
@@ -96,12 +202,100 @@ export default {
       products: this.$store.state.rentalProducts || [],
       itemnumber: null,
       code: "",
-      reading: false
+      reading: false,
+      pagination: {
+        rowsNumber: 0,
+        descending: false,
+        page: 1,
+        rowsPerPage: 100
+      },
+      visibleColumns: [],
+      columns: [
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DESC1",
+          required: true,
+          label: "Omschr. 1",
+          align: "left",
+          field: row => row.DESC1,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true,
+          type: "rentalPickup"
+        },
+        {
+          name: "QTYOK",
+          label: "OK",
+          align: "left",
+          field: row => row.QTYOK,
+          format: val => `${val}`,
+          sortable: true,
+          type: "rentalReturn"
+        },
+        {
+          name: "QTYDAM",
+          label: "Beschadigd",
+          align: "left",
+          field: row => row.QTYDAM,
+          format: val => `${val}`,
+          sortable: true,
+          type: "rentalReturn"
+        },
+        {
+          name: "QTYLOST",
+          label: "Vermist",
+          align: "left",
+          field: row => row.QTYLOST,
+          format: val => `${val}`,
+          sortable: true,
+          type: "rentalReturn"
+        },
+        {
+          name: "STKLEVEL",
+          required: true,
+          label: "Voorraad",
+          align: "left",
+          field: row => row.STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DELETE",
+          required: true,
+          label: "Verwijderen",
+          align: "left",
+          sortable: false
+        }
+      ]
     };
   },
 
   mounted() {
     document.addEventListener("keypress", this.getInput);
+
+    this.visibleColumns = this.columns.reduce((acc, c) => {
+      if (
+        !c.type ||
+        c.type === (this.isRentalTypeReturn ? "rentalReturn" : "rentalPickup")
+      )
+        acc.push(c.name);
+      return acc;
+    }, []);
   },
 
   computed: {
@@ -111,15 +305,35 @@ export default {
   },
 
   methods: {
-    incrementQty: function(index) {
-      this.products[index].QTY++;
+    incrementQty: function(index, prop) {
+      this.products[index][prop]++;
       this.$store.commit("updateRentalProducts", this.products);
     },
 
-    decrementQty: function(index) {
-      if (this.products[index].QTY === 1) return;
-      this.products[index].QTY--;
+    decrementQty: function(index, prop) {
+      if (this.products[index][prop] === 1) return;
+      this.products[index][[prop]]--;
       this.$store.commit("updateRentalProducts", this.products);
+    },
+
+    toggleReturnState: function(val, index, prop) {
+      switch (prop) {
+        case "QTYOK":
+          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYDAM && !this.products[index].QTYLOST ? 1 : 0));
+          this.products[index].QTYDAM = 0;
+          this.products[index].QTYLOST = 0;
+          break;
+        case "QTYDAM":
+          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYOK && !this.products[index].QTYLOST ? 1 : 0));
+          this.products[index].QTYOK = 0;
+          this.products[index].QTYLOST = 0;
+          break;
+        case "QTYLOST":
+          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYOK && !this.products[index].QTYDAM ? 1 : 0));
+          this.products[index].QTYOK = 0;
+          this.products[index].QTYDAM = 0;
+          break;
+      }
     },
 
     deleteProduct: function(index) {
@@ -170,7 +384,12 @@ export default {
               // notify?
             } else {
               this.products.push(
-                Object.assign(res.data[0], { QTY: 1, QTYDAM: 0, QTYLOST: 0, QTYOK: 1 })
+                Object.assign(res.data[0], {
+                  QTY: 1,
+                  QTYDAM: 0,
+                  QTYLOST: 0,
+                  QTYOK: 1
+                })
               );
             }
             this.$store.commit("updateRentalProducts", this.products);
@@ -180,7 +399,7 @@ export default {
         })
         .catch(() => {
           this.notifyNotFound();
-        })
+        });
     }
   },
 

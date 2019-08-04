@@ -1,19 +1,14 @@
 <template>
-  <div>
-    <p><strong>Momenteel op naam</strong></p>
-
-    <q-list bordered separator>
-      <q-item v-for="(p, index) in this.items" clickable v-bind:key="index">
-        <q-item-section>
-          <q-item-label>{{ p.ITEMNO }}</q-item-label>
-          <q-item-label caption lines="2">{{ p.ITEMDESC }}</q-item-label>
-        </q-item-section>
-
-        <q-item-section side bottom>
-          <q-item-label caption>{{ p.QTY }}</q-item-label>
-        </q-item-section>
-      </q-item>
-    </q-list>
+  <div class="q-pa-md">
+    <q-table
+      v-if="items.length"
+      title="Momenteel op naam"
+      :data="items"
+      :columns="columns"
+      :pagination.sync="pagination"
+      :rows-per-page-options="[]"
+      row-key="RECID"
+    />
   </div>
 </template>
 
@@ -24,6 +19,40 @@ export default {
   data() {
     return {
       items: [],
+      pagination: {
+        descending: false,
+        page: 1,
+        rowsPerPage: 1000
+      },
+      columns: [
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "ITEMDESC",
+          required: true,
+          label: "Omschr. 1",
+          align: "left",
+          field: row => row.ITEMDESC,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+      ]
     };
   },
 
@@ -35,7 +64,7 @@ export default {
     getItems: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}/contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,ITEMDESC,MEMO`
         )
         .then(res => {
           if (res && res.data && res.data.length) {
@@ -46,7 +75,7 @@ export default {
             });
           }
         })
-        .catch(() => {})
+        .catch(() => {});
     }
   }
 };

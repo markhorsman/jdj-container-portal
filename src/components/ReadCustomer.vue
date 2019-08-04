@@ -25,7 +25,7 @@ export default {
       devices: null,
       readerName: null,
       uid: null,
-      customer: this.$store.customer || null
+      customer: this.$store.state.customer || null
     };
   },
 
