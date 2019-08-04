@@ -52,6 +52,8 @@ import {
   QSeparator,
   QPopupEdit,
   QField,
+  QLinearProgress,
+  QKnob,
   Loading,
   ClosePopup,
 
@@ -104,6 +106,8 @@ Vue.use(Quasar, {
     QSeparator,
     QPopupEdit,
     QField,
+    QLinearProgress,
+    QKnob,
   },
   directives: {
     ClosePopup,
