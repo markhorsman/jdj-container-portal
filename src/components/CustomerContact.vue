@@ -2,8 +2,9 @@
   <div class="q-px-lg q-pb-md">
     <br />
     <q-card style="min-height: 200px;">
-      <q-card-section>
-        <p v-if="!readerName">Sluit een RFID reader aan via een van de USB poorten</p>
+      <q-card-section v-if="!readerName">
+        <br /><br />
+        <p>Sluit een RFID reader aan via een van de USB poorten</p>
         <q-space />
       </q-card-section>
 
