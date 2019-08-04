@@ -247,10 +247,7 @@ export default {
         result = await this.$api.post(
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
-          )}/deliver?api_key=${this.$store.state.api_key}`,
-          {
-            "DOCNO#2": 0
-          }
+          )}/deliver?api_key=${this.$store.state.api_key}`
         );
       } catch (e) {
         result = e;
@@ -265,7 +262,7 @@ export default {
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
           )}/offhire?api_key=${this.$store.state.api_key}`,
-          Object.assign(item, { Qtyok: 1, Qtydam: 0, Qtylost: 0 })
+          { Qtyok: item.QTYOK, Qtydam: item.QTYDAM, Qtylost: item.QTYLOST }
         );
       } catch (e) {
         result = e;
@@ -355,7 +352,6 @@ export default {
       const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
       contItemOffhireResults.forEach(r => {
-        console.log(r);
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
@@ -554,7 +550,6 @@ export default {
       const contItemDeliverResults = await Promise.all(deliverContItemRequests);
 
       contItemDeliverResults.forEach(r => {
-        console.log(r);
         if (!r || r.status > 201) {
           deliverFailed++;
           if (r.data && r.data.Message) {

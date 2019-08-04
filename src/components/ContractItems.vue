@@ -5,7 +5,6 @@
       title="Momenteel op naam"
       :data="items"
       :columns="columns"
-      :pagination.sync="pagination"
       :rows-per-page-options="[]"
       row-key="RECID"
     />
@@ -19,11 +18,6 @@ export default {
   data() {
     return {
       items: [],
-      pagination: {
-        descending: false,
-        page: 1,
-        rowsPerPage: 1000
-      },
       columns: [
         {
           name: "ITEMNO",

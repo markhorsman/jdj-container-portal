@@ -9,7 +9,6 @@
       :data="products"
       :columns="columns"
       :visible-columns="visibleColumns"
-      :pagination.sync="pagination"
       row-key="RECID"
     >
       <template v-slot:body="props">
@@ -88,7 +87,7 @@
                 </q-item>
               </q-list>
             </q-popup-edit>
-            <q-checkbox
+            <q-toggle
               v-if="props.row.UNIQUE"
               :value="!!props.row.QTYOK"
               @input="v => toggleReturnState(v, props.row.__index, 'QTYOK')"
@@ -130,7 +129,7 @@
                 </q-item>
               </q-list>
             </q-popup-edit>
-            <q-checkbox
+            <q-toggle
               v-if="props.row.UNIQUE"
               :value="!!props.row.QTYDAM"
               @input="v => toggleReturnState(v, props.row.__index, 'QTYDAM')"
@@ -172,7 +171,7 @@
                 </q-item>
               </q-list>
             </q-popup-edit>
-            <q-checkbox
+            <q-toggle
               v-if="props.row.UNIQUE"
               :value="!!props.row.QTYLOST"
               @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
@@ -203,12 +202,6 @@ export default {
       itemnumber: null,
       code: "",
       reading: false,
-      pagination: {
-        rowsNumber: 0,
-        descending: false,
-        page: 1,
-        rowsPerPage: 100
-      },
       visibleColumns: [],
       columns: [
         {
@@ -240,7 +233,7 @@ export default {
         },
         {
           name: "QTYOK",
-          label: "OK",
+          label: "Goedgekeurd",
           align: "left",
           field: row => row.QTYOK,
           format: val => `${val}`,
