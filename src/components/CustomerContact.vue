@@ -272,9 +272,9 @@ export default {
             CODE: Math.floor(1000 + Math.random() * 9000),
             NAME: `${this.nameFirst} ${this.nameFamily}`,
             ADDRESS1: this.company,
-            TELEPHONE: this.phone,
+            TELEPHONE: this.phone || '',
             REFERENCE: this.uid,
-            EMAIL: this.email
+            EMAIL: this.email || ''
           },
           {
             auth: this.$config.container_api_basic_auth

@@ -66,7 +66,8 @@ export default {
   data() {
     return {
       product: null,
-      stockdepot: null,
+      stockDepotSource: null,
+      currentStockDepot: null,
       itemnumber: null,
       code: "",
       reading: false
@@ -126,7 +127,7 @@ export default {
               this.product = res.data[0];
             }
 
-            this.getStockDepot();
+            this.getStockDepots();
           } else {
             this.notifyNotFound();
           }
@@ -142,10 +143,11 @@ export default {
           `${this.$config.container_api_base_url}stocktransfer`,
           {
             CODE: this.$store.state.user.DEPOT,
-            ITEMNO: this.itemnumber,
+            ITEMNO: this.product.ITEMNO,
             QTY: this.product.QTY,
             RECID: this.product.RECID,
-            STOCK_DEPOT_RECID: this.stockdepot ? this.stockdepot.RECID : null
+            STOCK_DEPOT_SOURCE: this.stockDepotSource,
+            CURRENT_STOCK_DEPOT: this.currentStockDepot,
           },
           {
             auth: this.$config.container_api_basic_auth
@@ -176,14 +178,20 @@ export default {
         });
     },
 
-    getStockDepot() {
+    getStockDepots() {
       return this.$api
         .get(
-          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=RECID,STKLEVEL,CODE`
+          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,CODE`
         )
         .then(res => {
           if (res.data && res.data.length) {
-            this.stockdepot = res.data[0];
+            res.data.forEach(stkdepot => {
+              if (this.$config.main_depot && stkdepot.CODE === this.$config.main_depot) {
+                this.stockDepotSource = stkdepot.RECID;
+              } else if (stkdepot.CODE === this.$store.state.user.DEPOT) {
+                this.currentStockDepot = stkdepot.RECID;
+              }
+            });
           }
         });
     },

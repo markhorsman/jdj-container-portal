@@ -86,7 +86,7 @@ export default {
           .post(`${this.$config.api_base_url}/sessions/logon`, {
             USERNAME: this.username,
             PASSWORD: this.password,
-            DEPOT: this.depot
+            DEPOT: this.depot.toUpperCase()
           })
           .then(res => {
             localStorage.setItem("user", JSON.stringify(res.data));
