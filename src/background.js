@@ -10,6 +10,7 @@ const log = require('electron-log')
 const { autoUpdater } = require("electron-updater")
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
+let updateInterval = null
 
 autoUpdater.logger = log
 autoUpdater.logger.transports.file.level = 'info'
@@ -37,7 +38,11 @@ autoUpdater.on('update-downloaded', (info) => {
   }
 
   dialog.showMessageBox(dialogOpts, (response) => {
-    if (response === 0) autoUpdater.quitAndInstall()
+    if (response === 0) {
+      autoUpdater.quitAndInstall()
+    } else {
+      if (updateInterval) clearInterval(updateInterval)
+    }
   })
 });
 
@@ -96,7 +101,7 @@ app.on('ready', async () => {
   //   await installVueDevtools()
   // }
 
-  setInterval(() => {
+  updateInterval = setInterval(() => {
     autoUpdater.checkForUpdates()
   }, 60000)
 })

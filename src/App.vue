@@ -1,31 +1,5 @@
 <template>
   <div>
-    <q-dialog v-model="autoUpdate" seamless position="bottom">
-      <q-card style="width: 350px">
-        <q-linear-progress :value="autoUpdateProgress / 100" />
-
-        <q-card-section class="row items-center no-wrap">
-          <div>
-            <div class="text-weight-bold">Nieuwe update beschikbaar</div>
-            <div class="text-grey">Downloaden...</div>
-          </div>
-          <q-knob
-            show-value
-            font-size="12px"
-            v-model="autoUpdateProgress"
-            size="50px"
-            :thickness="0.22"
-            track-color="grey-3"
-            class="q-ma-md"
-          >{{ autoUpdateProgress }}%</q-knob>
-
-          <q-space />
-
-          <q-btn flat round icon="close" v-close-popup />
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-
     <q-dialog v-model="confirmLogout" persistent>
       <q-card>
         <q-card-section class="row items-center">
@@ -222,9 +196,7 @@ export default {
       confirmLogout: false,
       confirmClose: false,
       maxHeight: win.getContentSize()[1],
-      version,
-      autoUpdate: false,
-      autoUpdateProgress: 0,
+      version
     };
   },
   computed: {
