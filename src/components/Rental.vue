@@ -362,42 +362,17 @@ export default {
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
-            // const body = JSON.parse(r.config.data);
-            // this.$notify({
-            //   group: "api",
-            //   title: `${body.Itemno} niet toegevoegd aan contract`,
-            //   text: r.data.Message,
-            //   type: "error",
-            //   duration: 5000
-            // });
+            const body = JSON.parse(r.config.data);
+            this.$notify({
+              group: "api",
+              title: `${body.Itemno} niet toegevoegd aan contract`,
+              text: r.data.Message,
+              type: "error",
+              duration: 5000
+            });
           }
         }
       });
-
-      // const updateContItemRequests = products.map(
-      //   async p =>
-      //     await this.updateContItemRequest(p.id, CONTITEM_FROM_RENT_STATUS)
-      // );
-
-      // const contItemUpdates = await Promise.all(updateContItemRequests);
-
-      // contItemUpdates.forEach(r => {
-      //   console.log(r);
-
-      //   if (!r || r.status > 201) {
-      //     failed++;
-      //     this.$notify({
-      //       group: "api",
-      //       title: `Product niet uit huur gehaald`,
-      //       text: "", // TODO: add message from result
-      //       type: "error",
-      //       duration: 5000
-      //     });
-      //   } else {
-      //     // how to get the contitem/stock item?
-      //     // processed.push(products.find(p => r.data)r.data);
-      //   }
-      // });
 
       // all failed
       if (failed && failed === products.length) {
@@ -405,24 +380,6 @@ export default {
       }
 
       // TODO: if one or more failed, and at least one succeeded, remove the succeeded items from store.
-
-      // we only want to update the stock items of which the linked contitem has been successfully updated
-      // const updateStockRequests = products.map(
-      //   async p =>
-      //     await this.updateStockRequest(
-      //       p.id,
-      //       p.DAMAGED && p.UNIQUE
-      //         ? STOCK_IN_REPAIR_STATUS
-      //         : p.UNIQUE
-      //         ? STOCK_AVAILABLE_STATUS
-      //         : p.STATUS,
-      //       p.QTY,
-      //       "substract",
-      //       p.UNIQUE
-      //     )
-      // );
-
-      // const stockUpdates = await Promise.all(updateStockRequests);
 
       // TODO: notify if one or more stock updates failed?
 
@@ -521,30 +478,6 @@ export default {
           if (stock) stockItems.push(stock);
         }
       });
-
-      /*
-      // update contitem status (Insphire API does not do this for us)
-      const updateContItemRequests = products.map(
-        async id =>
-          await this.updateContItemRequest(id, CONTITEM_IN_RENT_STATUS)
-      );
-
-      // update stock status and quantity (Insphire API does not do this for us)
-      const updateStockRequests = stockItems.map(
-        async s =>
-          await this.updateStockRequest(
-            s.RECID,
-            s.UNIQUE ? STOCK_IN_RENT_STATUS : s.STATUS,
-            s.QTY,
-            "add",
-            s.UNIQUE
-          )
-      );
-
-      // get responses of update requests
-      const contItemUpdates = await Promise.all(updateContItemRequests);
-      const stockUpdates = await Promise.all(updateStockRequests);
-      */
 
       if (failed && failed === contItemResults.length) {
         return;

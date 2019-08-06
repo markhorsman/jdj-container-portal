@@ -19,6 +19,7 @@ let win
 protocol.registerStandardSchemes(['app'], { secure: true })
 
 autoUpdater.on('update-downloaded', (info) => {
+  if (updateInterval) clearInterval(updateInterval)
   const dialogOpts = {
     type: 'info',
     buttons: ['Herstarten', 'Nu niet'],
@@ -30,8 +31,6 @@ autoUpdater.on('update-downloaded', (info) => {
   dialog.showMessageBox(dialogOpts, (response) => {
     if (response === 0) {
       autoUpdater.quitAndInstall()
-    } else {
-      if (updateInterval) clearInterval(updateInterval)
     }
   })
 });
