@@ -54,6 +54,7 @@ import {
   QField,
   QLinearProgress,
   QKnob,
+  QExpansionItem,
   Loading,
   ClosePopup,
 
@@ -108,6 +109,7 @@ Vue.use(Quasar, {
     QField,
     QLinearProgress,
     QKnob,
+    QExpansionItem,
   },
   directives: {
     ClosePopup,

@@ -6,24 +6,14 @@ import {
   installVueDevtools
 } from 'vue-cli-plugin-electron-builder/lib'
 
-const log = require('electron-log')
 const { autoUpdater } = require("electron-updater")
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 let updateInterval = null
 
-autoUpdater.logger = log
-autoUpdater.logger.transports.file.level = 'info'
-log.info('App starting...')
-
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
-
-function sendStatusToWindow(text) {
-  log.info(text);
-  win.webContents.send('message', text);
-}
 
 // Standard scheme must be registered before the app is ready
 protocol.registerStandardSchemes(['app'], { secure: true })
