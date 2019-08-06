@@ -262,7 +262,14 @@ export default {
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
           )}/offhire?api_key=${this.$store.state.api_key}`,
-          { Qtyok: item.QTYOK, Qtydam: item.QTYDAM, Qtylost: item.QTYLOST }
+          {
+            QTYOK: item.QTYOK,
+            QTYDAM: item.QTYDAM,
+            QTYLOST: item.QTYLOST,
+            DAMAGE: "",
+            DEPOT: this.$store.state.user.DEPOT,
+            DAMAGEPHOTO: 0
+          }
         );
       } catch (e) {
         result = e;

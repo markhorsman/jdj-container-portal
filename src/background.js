@@ -91,9 +91,11 @@ app.on('ready', async () => {
   //   await installVueDevtools()
   // }
 
-  updateInterval = setInterval(() => {
-    autoUpdater.checkForUpdates()
-  }, 60000)
+  if (!process.env.WEBPACK_DEV_SERVER_URL) {
+    updateInterval = setInterval(() => {
+      autoUpdater.checkForUpdates()
+    }, 60000)
+  }
 })
 
 // Exit cleanly on request from parent process in development mode.
