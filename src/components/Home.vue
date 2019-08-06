@@ -4,6 +4,7 @@
     <q-btn color="primary" label="Download PDF" @click="download" class="float-right" />
     <br />
     <br />
+    <br />
     <q-list bordered v-for="(entry, index) in feedEntries" v-bind:key="index">
       <q-expansion-item
         :label="entry.question"
@@ -17,7 +18,7 @@
       </q-expansion-item>
     </q-list>
 
-    <div ref="content">
+    <div ref="content" class="hidden">
       <h3>JDJ Container Portal FAQ</h3>
       <div v-for="(entry, index) in feedEntries" v-bind:key="index">
         <h5>{{ entry.question }}</h5>
