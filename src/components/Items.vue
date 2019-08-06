@@ -187,7 +187,7 @@ export default {
       const buildFilter = () =>
         `STATUS eq 1${
           filter
-            ? ` and startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or startswith(MEMO, '${filter}')`
+            ? ` and (startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or startswith(MEMO, '${filter}'))`
             : ``
         }`;
 

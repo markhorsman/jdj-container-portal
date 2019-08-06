@@ -268,7 +268,7 @@ export default {
             QTYLOST: item.QTYLOST,
             DAMAGE: "",
             DEPOT: this.$store.state.user.DEPOT,
-            DAMAGEPHOTO: 0
+            DAMAGEPHOTO: ""
           }
         );
       } catch (e) {
@@ -338,7 +338,7 @@ export default {
 
       this.$store.state.rentalProducts.forEach(p => {
         const match = items.find(obj => obj.ITEMNO === p.ITEMNO);
-        if (match) products.push(match);
+        if (match) products.push(Object.assign(p, { RECID: match.RECID }));
       });
 
       if (!products.length) {
