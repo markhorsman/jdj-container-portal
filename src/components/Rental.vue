@@ -30,6 +30,7 @@
           {value: 'pickup', slot: 'pickup'},
           {value: 'return', slot: 'return'},
         ]"
+          @input="rentalTypeChanged"
         >
           <template v-slot:pickup>
             <div class="row items-center no-wrap">
@@ -64,7 +65,7 @@
           title="Artikelen"
           :data="products"
           :columns="columns"
-          :pagination.sync="pagination"
+          :visible-columns="visibleColumns"
           :rows-per-page-options="[]"
           row-key="RECID"
         />
@@ -131,17 +132,17 @@ export default {
     }
   },
 
+  mounted() {
+    this.rentalTypeChanged(this.rentalType);
+  },
+
   data() {
     return {
       step: 1,
       rentalType: "pickup",
       confirmCancel: false,
       products: this.$store.state.rentalProducts || [],
-      pagination: {
-        descending: false,
-        page: 1,
-        rowsPerPage: 1000
-      },
+      visibleColumns: [],
       columns: [
         {
           name: "ITEMNO",
@@ -163,12 +164,39 @@ export default {
         },
         {
           name: "QTY",
-          required: true,
           label: "Aantal",
           align: "left",
           field: row => row.QTY,
           format: val => `${val}`,
-          sortable: true
+          sortable: true,
+          type: "pickup"
+        },
+        {
+          name: "QTYOK",
+          label: "Goedgekeurd",
+          align: "left",
+          field: row => row.QTYOK,
+          format: val => `${val}`,
+          sortable: true,
+          type: "return"
+        },
+        {
+          name: "QTYDAM",
+          label: "Beschadigd",
+          align: "left",
+          field: row => row.QTYDAM,
+          format: val => `${val}`,
+          sortable: true,
+          type: "return"
+        },
+        {
+          name: "QTYLOST",
+          label: "Vermist",
+          align: "left",
+          field: row => row.QTYLOST,
+          format: val => `${val}`,
+          sortable: true,
+          type: "return"
         },
         {
           name: "STKLEVEL",
@@ -189,6 +217,13 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
       this.$router.push("/");
+    },
+
+    rentalTypeChanged(type) {
+      this.visibleColumns = this.columns.reduce((acc, c) => {
+        if (!c.type || c.type === type) acc.push(c.name);
+        return acc;
+      }, []);
     },
 
     updateContItemRequest: async function(recid, status) {
