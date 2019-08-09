@@ -1,9 +1,10 @@
 import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
-import Notifications from 'vue-notification'
 import Vuelidate from 'vuelidate'
+import { Notify } from 'quasar'
 import './quasar'
+
 
 import axios from './api-axios'
 import config from '../config'
@@ -13,9 +14,14 @@ Vue.prototype.$api = axios
 Vue.prototype.$config = config
 
 Vue.use(Vuelidate)
-Vue.use(Notifications)
 
 Vue.config.productionTip = false
+
+Notify.setDefaults({
+  timeout: 0,
+  textColor: 'white',
+  actions: [{ icon: 'close', color: 'white' }]
+})
 
 export default new Vue({
   el: '#app',

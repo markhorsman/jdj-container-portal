@@ -3,7 +3,8 @@
     <br />
     <q-card style="min-height: 200px;">
       <q-card-section v-if="!readerName">
-        <br /><br />
+        <br />
+        <br />
         <p>Sluit een RFID reader aan via een van de USB poorten</p>
         <q-space />
       </q-card-section>
@@ -272,9 +273,9 @@ export default {
             CODE: Math.floor(1000 + Math.random() * 9000),
             NAME: `${this.nameFirst} ${this.nameFamily}`,
             ADDRESS1: this.company,
-            TELEPHONE: this.phone || '',
+            TELEPHONE: this.phone || "",
             REFERENCE: this.uid,
-            EMAIL: this.email || ''
+            EMAIL: this.email || ""
           },
           {
             auth: this.$config.container_api_basic_auth
@@ -284,22 +285,18 @@ export default {
           this.$refs.contactForm.resetValidation();
           this.$refs.contactForm.reset();
 
-          this.$notify({
-            group: "api",
-            title: "Klant contact",
-            text: `Contact toegevoegd aan ${this.customer.label}`,
-            type: "success",
-            duration: 10000
+          this.$q.notify({
+            color: "green-4",
+            icon: "fas fa-check-circle",
+            message: `Contact toegevoegd aan ${this.customer.label}`
           });
         })
         .catch(err => {
-          this.$notify({
-            group: "api",
-            title: "Oeps!",
-            text:
-              "Er is iets misgegaan tijdens het aanmaken van een nieuw contact",
-            type: "error",
-            duration: 10000
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message:
+              "Er is iets misgegaan tijdens het aanmaken van een nieuw contact"
           });
         });
     },

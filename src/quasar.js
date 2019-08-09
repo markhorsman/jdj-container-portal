@@ -57,6 +57,7 @@ import {
   QExpansionItem,
   Loading,
   ClosePopup,
+  Notify,
 
 } from 'quasar'
 
@@ -116,6 +117,7 @@ Vue.use(Quasar, {
   },
   plugins: {
     Loading,
+    Notify,
   },
   extras: [
     'Fontawesome'

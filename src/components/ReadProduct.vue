@@ -312,17 +312,29 @@ export default {
     toggleReturnState: function(val, index, prop) {
       switch (prop) {
         case "QTYOK":
-          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYDAM && !this.products[index].QTYLOST ? 1 : 0));
+          this.products[index][prop] = val
+            ? 1
+            : !this.products[index].QTYDAM && !this.products[index].QTYLOST
+            ? 1
+            : 0;
           this.products[index].QTYDAM = 0;
           this.products[index].QTYLOST = 0;
           break;
         case "QTYDAM":
-          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYOK && !this.products[index].QTYLOST ? 1 : 0));
+          this.products[index][prop] = val
+            ? 1
+            : !this.products[index].QTYOK && !this.products[index].QTYLOST
+            ? 1
+            : 0;
           this.products[index].QTYOK = 0;
           this.products[index].QTYLOST = 0;
           break;
         case "QTYLOST":
-          this.products[index][prop] = (val ? 1 : (!this.products[index].QTYOK && !this.products[index].QTYDAM ? 1 : 0));
+          this.products[index][prop] = val
+            ? 1
+            : !this.products[index].QTYOK && !this.products[index].QTYDAM
+            ? 1
+            : 0;
           this.products[index].QTYOK = 0;
           this.products[index].QTYDAM = 0;
           break;
@@ -354,12 +366,10 @@ export default {
       }
     },
     notifyNotFound: function() {
-      this.$notify({
-        group: "api",
-        title: "Product niet gevonden",
-        text: `Product met nummer ${this.itemnumber} niet gevonden.`,
-        type: "error",
-        duration: 5000
+      this.$q.notify({
+        color: "red-5",
+        icon: "fas fa-exclamation-triangle",
+        message: `Product met nummer ${this.itemnumber} niet gevonden.`
       });
     },
     getProduct: function() {

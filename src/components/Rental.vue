@@ -212,6 +212,18 @@ export default {
   },
 
   methods: {
+    notify(message, type = "error", timeout = 0) {
+      this.$q.notify({
+        color: type === "error" ? "red-5" : "green-4",
+        icon:
+          type === "error"
+            ? "fas fa-exclamation-triangle"
+            : "fas fa-check-circle",
+        message,
+        timeout
+      });
+    },
+
     cancel: function() {
       this.confirmCancel = false;
       this.$store.commit("updateRentalProducts", []);
@@ -361,13 +373,9 @@ export default {
       const items = response.data;
 
       if (!items || !items.length) {
-        this.$notify({
-          group: "api",
-          title: `Contract artikelen niet gevonden.`,
-          text: `Artikelen van contract (${this.$config.default_contract_number}) niet gevonden`,
-          type: "error",
-          duration: 5000
-        });
+        this.notify(
+          `Artikelen van contract (${this.$config.default_contract_number}) niet gevonden`
+        );
         return;
       }
 
@@ -377,13 +385,9 @@ export default {
       });
 
       if (!products.length) {
-        this.$notify({
-          group: "api",
-          title: `Geen match met producten.`,
-          text: `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`,
-          type: "error",
-          duration: 5000
-        });
+        this.notify(
+          `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`
+        );
         return;
       }
 
@@ -398,13 +402,7 @@ export default {
           failed++;
           if (r.data && r.data.Message) {
             const body = JSON.parse(r.config.data);
-            this.$notify({
-              group: "api",
-              title: `${body.Itemno} niet toegevoegd aan contract`,
-              text: r.data.Message,
-              type: "error",
-              duration: 5000
-            });
+            this.notify(`${body.Itemno} niet toegevoegd aan contract`);
           }
         }
       });
@@ -421,14 +419,11 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
-      this.$notify({
-        group: "api",
-        title: "Contract items",
-        text: `Er zijn ${contItemOffhireResults.length -
+      this.notify(
+        `Er zijn ${contItemOffhireResults.length -
           failed} contract items uit huur gehaald.`,
-        type: "success",
-        duration: 5000
-      });
+        "success"
+      );
       this.$router.push("/");
     },
 
@@ -449,25 +444,17 @@ export default {
       const res = await this.getContract();
       const contract = res.data;
       if (!contract) {
-        this.$notify({
-          group: "api",
-          title: `Contract niet gevonden.`,
-          text: `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`,
-          type: "error",
-          duration: 5000
-        });
+        this.notify(
+          `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`
+        );
         return;
       }
 
       const m = moment(contract.ESTRETD);
       if (!m || !m.isValid()) {
-        this.$notify({
-          group: "api",
-          title: `Ongeldige datum.`,
-          text: `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`,
-          type: "error",
-          duration: 5000
-        });
+        this.notify(
+          `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`
+        );
       }
 
       const estretd = m.format("YYYY-MM-DD HH:mm:ss");
@@ -494,14 +481,7 @@ export default {
           failed++;
           if (r.data && r.data.Message) {
             const body = JSON.parse(r.config.data);
-
-            this.$notify({
-              group: "api",
-              title: `${body.Itemno} niet toegevoegd aan contract`,
-              text: r.data.Message,
-              type: "error",
-              duration: 5000
-            });
+            this.notify(r.data.Message);
           }
         } else {
           products.push(r.data.RECID);
@@ -529,14 +509,7 @@ export default {
           deliverFailed++;
           if (r.data && r.data.Message) {
             const body = JSON.parse(r.config.data);
-
-            this.$notify({
-              group: "api",
-              title: `${body.Itemno} niet in huur gezet`,
-              text: r.data.Message,
-              type: "error",
-              duration: 5000
-            });
+            this.notify(r.data.Message);
           }
         }
       });
@@ -553,14 +526,11 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
-      this.$notify({
-        group: "api",
-        title: "Contract items toegevoegd",
-        text: `Er zijn ${contItemDeliverResults.length -
+      this.notify(
+        `Er zijn ${contItemDeliverResults.length -
           deliverFailed} contract items in huur gezet.`,
-        type: "success",
-        duration: 5000
-      });
+        "success"
+      );
       this.$router.push("/");
     }
   }

@@ -440,12 +440,10 @@ export default {
         this.$store.commit("saveStockCount", this.selected);
         return;
       } else if (s) {
-        this.$notify({
-          group: "api",
-          title: `Artikel in tellijst`,
-          text: `Het unieke artikel met nummer (${itemnumber}) staat al in de tellijst`,
-          type: "error",
-          duration: 5000
+        this.$q.notify({
+          color: "red-5",
+          icon: "fas fa-exclamation-triangle",
+          message: `Het unieke artikel met nummer (${itemnumber}) staat al in de tellijst`
         });
         return;
       }
@@ -467,12 +465,10 @@ export default {
 
       this.getProduct(itemnumber).then(p => {
         if (!p) {
-          this.$notify({
-            group: "api",
-            title: `Artikel niet gevonden.`,
-            text: `Artikel met nummer (${itemnumber}) niet gevonden`,
-            type: "error",
-            duration: 5000
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Artikel met nummer (${itemnumber}) niet gevonden`
           });
           return;
         }
@@ -571,27 +567,23 @@ export default {
         this.listType === "counted"
           ? "Hierbij ontvangt u een tellijst van artikelen"
           : "Hierbij ontvangt u een lijst met ongetelde artikelen:";
-      
+
       this.chooseEmail = false;
       eventHub.$emit("before-request");
 
       return emailStockCount(list, this.emailaddress, subject, intro)
         .then(info => {
-          this.$notify({
-            group: "api",
-            title: `Lijst is verstuurd.`,
-            text: `De lijst met ${list.length} producten is verzonden.`,
-            type: "success",
-            duration: 5000
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `De lijst met ${list.length} producten is verzonden.`
           });
         })
         .catch(e => {
-          this.$notify({
-            group: "api",
-            title: `Email sturen mislukt.`,
-            text: e.message,
-            type: "error",
-            duration: 5000
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Email sturen mislukt.`
           });
         })
         .finally(() => {

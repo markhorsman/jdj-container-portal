@@ -100,12 +100,10 @@ export default {
     },
 
     notifyNotFound() {
-      this.$notify({
-        group: "api",
-        title: "Artikel niet gevonden",
-        text: `Artikel met nummer ${this.itemnumber} niet gevonden.`,
-        type: "error",
-        duration: 5000
+      this.$q.notify({
+        color: "red-5",
+        icon: "fas fa-exclamation-triangle",
+        message: `Artikel met nummer ${this.itemnumber} niet gevonden.`
       });
     },
 
@@ -147,19 +145,17 @@ export default {
             QTY: this.product.QTY,
             RECID: this.product.RECID,
             STOCK_DEPOT_SOURCE: this.stockDepotSource,
-            CURRENT_STOCK_DEPOT: this.currentStockDepot,
+            CURRENT_STOCK_DEPOT: this.currentStockDepot
           },
           {
             auth: this.$config.container_api_basic_auth
           }
         )
         .then(res => {
-          this.$notify({
-            group: "api",
-            title: "Transfer gelukt",
-            text: `Artikel met code ${this.itemnumber} is overgeplaatst`,
-            type: "success",
-            duration: 10000
+          this.$q.notify({
+            color: "green-4",
+            icon: "fas fa-check-circle",
+            message: `Artikel met code ${this.itemnumber} is overgeplaatst`
           });
 
           this.itemnumber = null;
@@ -167,13 +163,11 @@ export default {
           this.stockdepot = null;
         })
         .catch(err => {
-          this.$notify({
-            group: "api",
-            title: "Oeps!",
-            text:
-              "Er is iets misgegaan tijdens het verplaatsen van het artikel",
-            type: "error",
-            duration: 10000
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message:
+              "Er is iets misgegaan tijdens het verplaatsen van het artikel"
           });
         });
     },
@@ -186,7 +180,10 @@ export default {
         .then(res => {
           if (res.data && res.data.length) {
             res.data.forEach(stkdepot => {
-              if (this.$config.main_depot && stkdepot.CODE === this.$config.main_depot) {
+              if (
+                this.$config.main_depot &&
+                stkdepot.CODE === this.$config.main_depot
+              ) {
                 this.stockDepotSource = stkdepot.RECID;
               } else if (stkdepot.CODE === this.$store.state.user.DEPOT) {
                 this.currentStockDepot = stkdepot.RECID;

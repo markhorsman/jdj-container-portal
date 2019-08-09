@@ -17,7 +17,7 @@ import { NFC } from "nfc-pcsc";
 
 export default {
   name: "ReadCustomer",
-  
+
   data() {
     return {
       nfc: null,
@@ -64,11 +64,10 @@ export default {
   },
   methods: {
     notifyNotFound: function() {
-      this.$notify({
-        group: "api",
-        title: "Klant niet gevonden",
-        text: `Klant met identifier ${this.uid} niet gevonden.`,
-        type: "error"
+      this.$q.notify({
+        color: "red-5",
+        icon: "fas fa-exclamation-triangle",
+        message: `Klant met identifier ${this.uid} niet gevonden.`
       });
     },
     getCustomer: function() {
@@ -87,7 +86,7 @@ export default {
         })
         .catch(() => {
           this.notifyNotFound();
-        })
+        });
     }
   },
 
