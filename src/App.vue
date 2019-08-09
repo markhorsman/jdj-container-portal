@@ -281,11 +281,5 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
-  .text-brand {
-    color: #a2aa33;
-  }
-  .bg-brand {
-    background: #a2aa33;
-  }
 }
 </style>
