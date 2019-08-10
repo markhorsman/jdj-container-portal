@@ -55,6 +55,7 @@ import {
   QLinearProgress,
   QKnob,
   QExpansionItem,
+  QSpinnerRadio,
   Loading,
   ClosePopup,
   Notify,
@@ -111,6 +112,7 @@ Vue.use(Quasar, {
     QLinearProgress,
     QKnob,
     QExpansionItem,
+    QSpinnerRadio,
   },
   directives: {
     ClosePopup,

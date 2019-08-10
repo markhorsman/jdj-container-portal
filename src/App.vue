@@ -67,6 +67,11 @@
               src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png"
             />
           </q-toolbar-title>
+          <div>
+            <span>{{ networkStatus }}</span>
+            <q-spinner-radio v-if="isOffline" color="red" size="2em" style="margin: 0 10px;" />
+            <q-icon name="signal_wifi_4_bar" v-if="isOnline" style="margin: 0 10px;" size="2em"/>
+          </div>
         </q-toolbar>
       </q-header>
 
@@ -101,7 +106,7 @@
             </q-item>
             <q-item clickable tag="a" to="/items">
               <q-item-section avatar>
-                <q-icon name="fas fa-id-badge" />
+                <q-icon name="fas fa-scroll" />
               </q-item-section>
               <q-item-section>
                 <q-item-label>Contract items</q-item-label>
@@ -172,7 +177,7 @@
       </q-drawer>
 
       <q-page-container>
-        <q-ajax-bar color="primary" size="3"/>
+        <q-ajax-bar color="primary" size="3" />
         <router-view />
       </q-page-container>
     </q-layout>
@@ -197,9 +202,21 @@ export default {
       version
     };
   },
+  mounted() {
+    this.$on("offline", () => {
+      console.log("offline");
+    });
+
+    this.$on("online", () => {
+      console.log("online");
+    });
+  },
   computed: {
     showUser() {
       return !!this.$store.state.user;
+    },
+    networkStatus() {
+      return this.isOnline ? "Online" : "Offline";
     }
   },
   methods: {

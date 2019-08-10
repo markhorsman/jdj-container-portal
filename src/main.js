@@ -3,6 +3,7 @@ import App from './App.vue'
 import router from './router'
 import Vuelidate from 'vuelidate'
 import { Notify } from 'quasar'
+import VueOffline from 'vue-offline'
 import './quasar'
 
 
@@ -14,6 +15,7 @@ Vue.prototype.$api = axios
 Vue.prototype.$config = config
 
 Vue.use(Vuelidate)
+Vue.use(VueOffline)
 
 Vue.config.productionTip = false
 
