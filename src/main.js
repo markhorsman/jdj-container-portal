@@ -36,7 +36,11 @@ export default new Vue({
       this.refreshing = true;
       this.$api
         .get(
-          `${this.$config.api_base_url}users?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}users/?api_key=${this.$store.state.api_key}&top=1`, {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
         .finally(() => {
           this.refreshing = false;

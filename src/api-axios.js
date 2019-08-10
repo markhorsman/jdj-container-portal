@@ -6,7 +6,12 @@ const instance = axios.create();
 
 instance.interceptors.request.use(
     conf => {
-        eventHub.$emit('before-request');
+        if (!conf.headers.skipLoader) {
+            eventHub.$emit('before-request');
+        } else {
+            delete conf.headers.skipLoader;
+        }
+
         return conf;
     },
     error => {

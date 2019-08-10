@@ -34,8 +34,6 @@
       v-bind:style="{ height: maxHeight + 'px' }"
       class="shadow-2 rounded-borders"
     >
-      <notifications group="api" align="middle" position="top center" />
-
       <q-header elevated>
         <q-bar class="q-electron-drag">
           <q-badge v-if="showUser">{{ this.$store.state.user.USERNAME }}</q-badge>
@@ -174,7 +172,7 @@
       </q-drawer>
 
       <q-page-container>
-        <q-ajax-bar />
+        <q-ajax-bar color="primary" size="3"/>
         <router-view />
       </q-page-container>
     </q-layout>
