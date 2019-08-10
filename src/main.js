@@ -30,6 +30,7 @@ Notify.setDefaults({
 })
 
 storage.setDataPath(os.tmpdir());
+const throat = require('throat')(Promise);
 
 export default new Vue({
   el: '#app',
@@ -40,7 +41,7 @@ export default new Vue({
     cache: {
       stock: {
         top: 100,
-        concurrency: 6,
+        concurrency: 3,
         fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT'],
         total: 0
       }
@@ -63,16 +64,31 @@ export default new Vue({
         })
     },
 
+    async setStorage(key, val) {
+      return await new Promise((resolve, reject) => {
+        storage.set(key, val, err => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+    },
+
     async buildCache() {
       if (this.isOffline) return;
 
+      await this.buildStockCache();
+      await this.buildCustomerContactCache();
+    },
+
+    async buildStockCache() {
       let stock = []
       const list = [];
 
-      storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
       this.cache.stock.total = await this.getStockTotal();
 
       if (!this.cache.stock.total) return;
+
+      storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
 
       const iterations = Math.ceil(this.cache.stock.total / this.cache.stock.top);
       const max = this.cache.stock.top;
@@ -80,21 +96,29 @@ export default new Vue({
         list.push(i * max);
       }
 
-      const throat = require('throat')(Promise);
       const data = await Promise.all(list.map(throat(this.cache.stock.concurrency, skip => this.getStockItems(max, skip))));
       stock = data.reduce((acc, a) => {
         acc.push.apply(acc, a);
         return acc;
       }, [])
 
-      storage.set('stock_all', stock, err => {
-        if (err) {
-          log.error(err);
-        }
-        else {
-          log.info(`${stock.length} stock records saved to disk`);
-        }
-      });
+      try {
+        await this.setStorage('stock_all', stock);
+        log.info(`${stock.length} stock records saved to disk`);
+      } catch (e) {
+        log.error(e);
+      }
+    },
+
+    async buildCustomerContactCache() {
+      storage.setDataPath(`${os.tmpdir()}/insphire/customercontact`);
+      const customerContacts = await this.getCustomerContacts();
+      try {
+        await this.setStorage('customercontact_all', customerContacts);
+        log.info(`${customerContacts.length} customercontact records saved to disk`);
+      } catch (e) {
+        log.error(e);
+      }
     },
 
     async getStockItems(top = 100, skip = 0) {
@@ -120,19 +144,21 @@ export default new Vue({
 
       if (!res || !res.data) return [];
 
-      res.data.forEach(item => {
-        storage.set(item.ITEMNO, item, err => {
-          if (err) {
-            log.error(err);
+      res.data.forEach(async item => {
+        try {
+          if (item.ITEMNO) {
+            await this.setStorage(item.ITEMNO, item);
           }
-        });
-      })
+        } catch (e) {
+          log.error(e);
+        }
+      });
 
       return res.data;
     },
 
     async getStockTotal() {
-      if (this.isOffline) return Promose.resolve([]);
+      if (this.isOffline) return Promise.resolve([]);
 
       let res;
       try {
@@ -155,11 +181,49 @@ export default new Vue({
       if (!res || !res.data) return 0;
 
       return res.data.totalCount;
+    },
+
+    async getCustomerContacts() {
+      if (this.isOffline) return Promise.resolve([]);
+
+      let res;
+
+      try {
+        res = await this.$api
+          .get(
+            `${this.$config.container_api_base_url}customercontact`,
+            { 
+              auth: this.$config.container_api_basic_auth,
+              headers: {
+                skipLoader: true,
+                skipCache: true 
+              }
+            }
+          )
+      } catch (e) {
+        log.error(e);
+      }
+
+      if (res && res.data && res.data.data) {
+        res.data.data.forEach(async item => {
+          try {
+            if (item.REFERENCE) {
+              await this.setStorage(item.REFERENCE, item);
+            }
+          } catch (e) {
+            log.error(e);
+          }
+        });
+
+        return res.data.data;
+      }
+
+      return [];
     }
   },
   mounted() {
     this.$store.commit("updateNetworkStatus", this.isOffline);
-  
+
     this.$on("offline", () => {
       this.$store.commit("updateNetworkStatus", true);
     });

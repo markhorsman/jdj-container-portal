@@ -2,7 +2,8 @@ import axios from 'axios';
 import store from './store'
 import { eventHub } from './eventhub'
 import parser from 'odata-parser'
-import getStock from "./axios-cache/stock";
+import getStock from './axios-cache/stock';
+import getCustomerContact from './axios-cache/customerContact'
 
 const instance = axios.create({
     timeout: 10000
@@ -18,9 +19,9 @@ const prepOdataInput = url => {
     return parts[1].replace(/\n|\r/g, "").replace(/\s{2,}/g, "").replace("$fields", "$select").substring(1);
 };
 
-const setEmptyResponse = conf => () => {
+const setResponse = conf => () => {
     return Promise.resolve({
-        data: [],
+        data: conf.data,
         status: 200,
         statusText: "OK",
         headers: conf.headers,
@@ -43,7 +44,7 @@ instance.interceptors.request.use(
             }
 
             if (store.state.offline) {
-                conf.adapter = setEmptyResponse(conf);
+                conf.adapter = setResponse(conf);
                 return conf;
             }
 
@@ -52,19 +53,30 @@ instance.interceptors.request.use(
 
         if (conf.method.toLowerCase() !== 'get') {
             // TODO: add some requests to queue
-            conf.adapter = setEmptyResponse(conf);
+            conf.adapter = setResponse(conf);
             return conf;
         }
 
+        if (conf.url.indexOf('customercontact') >= 0) {
+            const urlParts = conf.url.split('/');
+            return getCustomerContact(urlParts[urlParts.length - 1])
+                .then(data => {
+                    conf.data = data;
+                    conf.adapter = setResponse(conf);
+
+                    return conf;
+                })
+        }
+
         if (conf.url.indexOf('stock') === -1) {
-            conf.adapter = setEmptyResponse(conf);
+            conf.adapter = setResponse(conf);
             return conf;
         }
 
         const input = prepOdataInput(conf.url);
 
         if (!input) {
-            conf.adapter = setEmptyResponse(conf);
+            conf.adapter = setResponse(conf);
             return conf;
         }
 
@@ -76,25 +88,14 @@ instance.interceptors.request.use(
             odata = false;
         }
         if (!odata) {
-            conf.adapter = setEmptyResponse(conf);
+            conf.adapter = setResponse(conf);
             return conf;
         }
 
         return getStock(odata)
             .then(data => {
                 conf.data = data;
-
-                // Set the request adapter to send the cached response and prevent the request from actually running
-                conf.adapter = () => {
-                    return Promise.resolve({
-                        data: conf.data,
-                        status: 200,
-                        statusText: "OK",
-                        headers: conf.headers,
-                        config: conf,
-                        request: conf
-                    });
-                };
+                conf.adapter = setResponse(conf);
 
                 return conf;
             });
