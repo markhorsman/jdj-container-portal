@@ -6,6 +6,8 @@ import {
   installVueDevtools
 } from 'vue-cli-plugin-electron-builder/lib'
 
+import log from 'electron-log'
+
 const { autoUpdater } = require("electron-updater")
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
@@ -99,6 +101,10 @@ app.on('ready', async () => {
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
+  process.on('uncaughtException', function (err) {
+    log.error(err);
+  })
+  
   if (process.platform === 'win32') {
     process.on('message', data => {
       if (data === 'graceful-exit') {

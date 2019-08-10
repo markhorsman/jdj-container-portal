@@ -70,7 +70,7 @@
           <div>
             <span>{{ networkStatus }}</span>
             <q-spinner-radio v-if="isOffline" color="red" size="2em" style="margin: 0 10px;" />
-            <q-icon name="signal_wifi_4_bar" v-if="isOnline" style="margin: 0 10px;" size="2em"/>
+            <q-spinner-radio v-if="isOnline" color="green" size="2em" style="margin: 0 10px;" />
           </div>
         </q-toolbar>
       </q-header>
