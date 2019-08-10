@@ -226,15 +226,7 @@ export default {
       // calculate starting row of data
       let startRow = (page - 1) * rowsPerPage;
 
-      const buildFilter = () =>
-        `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${
-          filter ? ` and startswith(ITEMNO, '${filter}')` : ``
-        }
-        ${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}
-        ${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}
-        ${this.statusInRent ? ` and STATUS eq 1` : ``}
-        ${this.statusInRepair ? ` and STATUS eq 2` : ``}
-        `;
+      const buildFilter = () => `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${filter ? ` and startswith(ITEMNO, '${filter}')` : ``}${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}${this.statusInRent ? ` and STATUS eq 1` : ``}${this.statusInRepair ? ` and STATUS eq 2` : ``}`;
 
       this.$api
         .get(
@@ -242,7 +234,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+          }&$filter=${buildFilter()}&$fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
         )
         .then(res => {
           this.pagination.page = page;
@@ -260,10 +252,10 @@ export default {
     getGroups: function() {
       Promise.all([
         this.$api.get(
-          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`
+          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&$fields=CODE,NAME`
         ),
         this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&orderby=CODE asc&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&$fields=CODE,NAME,PGROUP`
         )
       ])
         .then(res => {

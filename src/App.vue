@@ -202,15 +202,6 @@ export default {
       version
     };
   },
-  mounted() {
-    this.$on("offline", () => {
-      console.log("offline");
-    });
-
-    this.$on("online", () => {
-      console.log("online");
-    });
-  },
   computed: {
     showUser() {
       return !!this.$store.state.user;

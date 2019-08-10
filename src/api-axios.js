@@ -1,8 +1,33 @@
 import axios from 'axios';
 import store from './store'
 import { eventHub } from './eventhub'
+import parser from 'odata-parser'
+import getStock from "./axios-cache/stock";
 
-const instance = axios.create();
+const instance = axios.create({
+    timeout: 10000
+});
+
+const prepOdataInput = url => {
+    let parts = url.split('&');
+    if (!parts || !parts.length) return false;
+
+    parts = url.split(parts[0]);
+    if (!parts || !parts.length) return false;
+
+    return parts[1].replace(/\n|\r/g, "").replace(/\s{2,}/g, "").replace("$fields", "$select").substring(1);
+};
+
+const setEmptyResponse = conf => () => {
+    return Promise.resolve({
+        data: [],
+        status: 200,
+        statusText: "OK",
+        headers: conf.headers,
+        config: conf,
+        request: conf
+    });
+};
 
 instance.interceptors.request.use(
     conf => {
@@ -12,7 +37,67 @@ instance.interceptors.request.use(
             delete conf.headers.skipLoader;
         }
 
-        return conf;
+        if (conf.headers && conf.headers.skipCache || !store.state.offline) {
+            if (conf.headers && conf.headers.hasOwnProperty('skipCache')) {
+                delete conf.headers.skipCache;
+            }
+
+            if (store.state.offline) {
+                conf.adapter = setEmptyResponse(conf);
+                return conf;
+            }
+
+            return conf;
+        }
+
+        if (conf.method.toLowerCase() !== 'get') {
+            // TODO: add some requests to queue
+            conf.adapter = setEmptyResponse(conf);
+            return conf;
+        }
+
+        if (conf.url.indexOf('stock') === -1) {
+            conf.adapter = setEmptyResponse(conf);
+            return conf;
+        }
+
+        const input = prepOdataInput(conf.url);
+
+        if (!input) {
+            conf.adapter = setEmptyResponse(conf);
+            return conf;
+        }
+
+        let odata;
+        try {
+            odata = parser.parse(input);
+        } catch (e) {
+            console.log(e.message);
+            odata = false;
+        }
+        if (!odata) {
+            conf.adapter = setEmptyResponse(conf);
+            return conf;
+        }
+
+        return getStock(odata)
+            .then(data => {
+                conf.data = data;
+
+                // Set the request adapter to send the cached response and prevent the request from actually running
+                conf.adapter = () => {
+                    return Promise.resolve({
+                        data: conf.data,
+                        status: 200,
+                        statusText: "OK",
+                        headers: conf.headers,
+                        config: conf,
+                        request: conf
+                    });
+                };
+
+                return conf;
+            });
     },
     error => {
         eventHub.$emit('request-error');

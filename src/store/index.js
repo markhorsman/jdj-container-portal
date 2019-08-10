@@ -11,8 +11,10 @@ export default new Vuex.Store({
         user: (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null),
         customer: null,
         rentalProducts: [],
-        stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null)
+        stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null),
+        offline: false,
     },
+    
     mutations: {
         login(state, data) {
             state.user = data
@@ -40,6 +42,10 @@ export default new Vuex.Store({
         saveStockCount(state, selected) {
             state.stockCount = selected;
             localStorage.setItem('stockCount', JSON.stringify(selected));
+        },
+
+        updateNetworkStatus(state, status) {
+            state.offline = status;
         }
     }
 })

@@ -193,6 +193,9 @@
 </template>
 
 <script>
+import storage from "electron-json-storage";
+import os from "os";
+storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
 export default {
   name: "ReadProduct",
 
@@ -375,7 +378,7 @@ export default {
     getProduct: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL,STATUS`
+          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&$fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL,STATUS`
         )
         .then(res => {
           if (res && res.data && res.data.length) {

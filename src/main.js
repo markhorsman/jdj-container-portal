@@ -41,7 +41,7 @@ export default new Vue({
       stock: {
         top: 100,
         concurrency: 6,
-        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL'],
+        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT'],
         total: 0
       }
     }
@@ -69,9 +69,8 @@ export default new Vue({
       let stock = []
       const list = [];
 
-      this.$offlineStorage.set('stock', stock);
+      storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
       this.cache.stock.total = await this.getStockTotal();
-
 
       if (!this.cache.stock.total) return;
 
@@ -88,18 +87,18 @@ export default new Vue({
         return acc;
       }, [])
 
-      storage.set('stock', stock, err => {
+      storage.set('stock_all', stock, err => {
         if (err) {
           log.error(err);
         }
         else {
-          log.info(`${stock.length} stock records saved to disk (${os.tmpdir()})`);
+          log.info(`${stock.length} stock records saved to disk`);
         }
       });
     },
 
     async getStockItems(top = 100, skip = 0) {
-      if (this.isOffline) return [];
+      if (this.isOffline) return Promise.resolve([]);
 
       let res;
       try {
@@ -107,10 +106,11 @@ export default new Vue({
           .get(
             `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
-            }&$top=${top}&$skip=${skip}&$fields=${this.cache.stock.fields.join(',')}`,
+            }&$top=${top}&$skip=${skip}&$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=${this.cache.stock.fields.join(',')}`,
             {
               headers: {
-                skipLoader: true
+                skipLoader: true,
+                skipCache: true
               }
             }
           );
@@ -120,11 +120,19 @@ export default new Vue({
 
       if (!res || !res.data) return [];
 
+      res.data.forEach(item => {
+        storage.set(item.ITEMNO, item, err => {
+          if (err) {
+            log.error(err);
+          }
+        });
+      })
+
       return res.data;
     },
 
     async getStockTotal() {
-      if (this.isOffline) return [];
+      if (this.isOffline) return Promose.resolve([]);
 
       let res;
       try {
@@ -132,10 +140,11 @@ export default new Vue({
           .get(
             `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
-            }&$top=1&$skip=0&$inlinecount=allpages&$fields=RECID,ITEMNO`,
+            }&$top=1&$skip=0&$inlinecount=allpages&$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'`,
             {
               headers: {
-                skipLoader: true
+                skipLoader: true,
+                skipCache: true
               }
             }
           );
@@ -149,6 +158,16 @@ export default new Vue({
     }
   },
   mounted() {
+    this.$store.commit("updateNetworkStatus", this.isOffline);
+  
+    this.$on("offline", () => {
+      this.$store.commit("updateNetworkStatus", true);
+    });
+
+    this.$on("online", () => {
+      this.$store.commit("updateNetworkStatus", false);
+    });
+
     this.refreshSession();
     this.buildCache();
 

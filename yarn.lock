@@ -6821,6 +6821,11 @@ obuf@^1.0.0, obuf@^1.1.2:
   resolved "https://registry.yarnpkg.com/obuf/-/obuf-1.1.2.tgz#09bea3343d41859ebd446292d11c9d4db619084e"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
 
+odata-parser@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/odata-parser/-/odata-parser-1.4.1.tgz#a2224bc749e76a6205bd47f47acd50eb1e71ed99"
+  integrity sha1-oiJLx0nnamIFvUf0es1Q6x5x7Zk=
+
 omggif@1.0.7:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/omggif/-/omggif-1.0.7.tgz#59d2eecb0263de84635b3feb887c0c9973f1e49d"
