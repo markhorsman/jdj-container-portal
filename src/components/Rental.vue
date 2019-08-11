@@ -17,6 +17,18 @@
     <q-stepper v-model="step" ref="stepper" color="primary" animated>
       <q-step :name="1" title="Klant ophalen" icon="nfc" :done="step > 1">
         <ReadCustomer />
+
+        <div style="max-width: 400px; margin-top: 30px;">
+          <q-select
+            v-if="rentalQueueOptions.length && isOnline"
+            filled
+            v-model="rentalQueueSelected"
+            :options="rentalQueueOptions"
+            stack-label
+            label="Niet-verzonden taken"
+            @input="loadQueueTask"
+          ></q-select>
+        </div>
       </q-step>
 
       <q-step :name="2" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 2">
@@ -134,6 +146,18 @@ export default {
 
   mounted() {
     this.rentalTypeChanged(this.rentalType);
+
+    this.rentalQueueOptions = this.rentalQueue.reduce((acc, q, i) => {
+      acc.push({
+        label: `${q.type === "hire" ? "Huur opdracht" : "Uithuur opdracht"} (${
+          q.products.length
+        } ${q.products.length > 1 ? "producten" : "product"}) voor ${
+          q.customer.NAME
+        }`,
+        value: i
+      });
+      return acc;
+    }, []);
   },
 
   data() {
@@ -142,6 +166,9 @@ export default {
       rentalType: "pickup",
       confirmCancel: false,
       products: this.$store.state.rentalProducts || [],
+      rentalQueue: this.$offlineStorage.get("rental_queue") || [],
+      rentalQueueSelected: null,
+      rentalQueueOptions: [],
       visibleColumns: [],
       columns: [
         {
@@ -212,7 +239,7 @@ export default {
   },
 
   methods: {
-    notify(message, type = "error", timeout = 0) {
+    notify(message, type = "error", timeout = 0, html = false) {
       this.$q.notify({
         color: type === "error" ? "red-5" : "green-4",
         icon:
@@ -220,8 +247,18 @@ export default {
             ? "fas fa-exclamation-triangle"
             : "fas fa-check-circle",
         message,
-        timeout
+        timeout,
+        html
       });
+    },
+
+    loadQueueTask(q) {
+      const queueItem = this.rentalQueue[q.value];
+      this.products = queueItem.products;
+      this.$store.commit("updateRentalProducts", queueItem.products);
+      this.$store.commit("updateCustomer", queueItem.customer);
+      this.rentalType = queueItem.type === "hire" ? "pickup" : "return";
+      this.step = 4;
     },
 
     cancel: function() {
@@ -357,6 +394,39 @@ export default {
       this.$store.commit("updateRentalProducts", products);
     },
 
+    queueTask(type) {
+      let rentalQueue = this.$offlineStorage.get("rental_queue") || [];
+      rentalQueue.push({
+        type,
+        products: this.$store.state.rentalProducts,
+        customer: this.$store.state.customer
+      });
+      this.$offlineStorage.set("rental_queue", rentalQueue);
+
+      this.$store.commit("updateRentalProducts", []);
+      this.$store.commit("updateCustomer", null);
+
+      this.$q.notify({
+        color: "orange-4",
+        icon: "fas fa-exclamation",
+        message: `<h5>Er is momenteel geen internet.</h5>
+        <p>Je kunt het ${
+          type === "hire" ? "verhuur" : "uithuur"
+        } verzoek bevestigen zodra je weer online bent.<br />
+        Alle niet verzonden taken vindt je terug in de verhuur module (alleen zichtbaar wanneer je online bent).</p>`,
+        timeout: 15000,
+        html: true
+      });
+
+      this.step = 1;
+    },
+
+    updateRentalQueue() {
+      this.rentalQueue.splice(this.rentalQueueSelected.value, 1);
+      this.rentalQueueOptions.splice(this.rentalQueueSelected.value, 1);
+      this.$offlineStorage.set("rental_queue", this.rentalQueue);
+    },
+
     returnItems: async function() {
       if (
         !this.$store.state.rentalProducts ||
@@ -364,6 +434,11 @@ export default {
         !this.$store.state.customer
       )
         return;
+
+      // save job to local storage
+      if (this.isOffline) {
+        return this.queueTask("offhire");
+      }
 
       const products = [];
       const processed = [];
@@ -419,12 +494,20 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
+      // remove from queue
+      if (this.rentalQueueSelected) {
+        this.updateRentalQueue();
+      }
+
       this.notify(
         `Er zijn ${contItemOffhireResults.length -
           failed} contract items uit huur gehaald.`,
-        "success"
+        "success",
+        5000
       );
-      this.$router.push("/");
+
+      this.step = 1;
+      this.$router.push("/rental");
     },
 
     rentItems: async function() {
@@ -434,6 +517,11 @@ export default {
         !this.$store.state.customer
       )
         return;
+
+      // save job to local storage
+      if (this.isOffline) {
+        return this.queueTask("hire");
+      }
 
       let failed = 0;
       let deliverFailed = 0;
@@ -523,15 +611,23 @@ export default {
 
       // TODO: notify if one or more updates failed?
 
+      // remove from queue
+      if (this.rentalQueueSelected) {
+        this.updateRentalQueue();
+      }
+
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
       this.notify(
         `Er zijn ${contItemDeliverResults.length -
           deliverFailed} contract items in huur gezet.`,
-        "success"
+        "success",
+        5000
       );
-      this.$router.push("/");
+
+      this.step = 1;
+      this.$router.push("/rental");
     }
   }
 };
