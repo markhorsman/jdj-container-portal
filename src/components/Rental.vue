@@ -146,18 +146,7 @@ export default {
 
   mounted() {
     this.rentalTypeChanged(this.rentalType);
-
-    this.rentalQueueOptions = this.rentalQueue.reduce((acc, q, i) => {
-      acc.push({
-        label: `${q.type === "hire" ? "Huur opdracht" : "Uithuur opdracht"} (${
-          q.products.length
-        } ${q.products.length > 1 ? "producten" : "product"}) voor ${
-          q.customer.NAME
-        }`,
-        value: i
-      });
-      return acc;
-    }, []);
+    this.genRentalQueueOptions();
   },
 
   data() {
@@ -252,7 +241,23 @@ export default {
       });
     },
 
+    genRentalQueueOptions() {
+      this.rentalQueueOptions = this.rentalQueue.reduce((acc, q, i) => {
+        acc.push({
+          label: `${
+            q.type === "hire" ? "Huur opdracht" : "Uithuur opdracht"
+          } (${q.products.length} ${
+            q.products.length > 1 ? "producten" : "product"
+          }) voor ${q.customer.NAME}`,
+          value: i
+        });
+        return acc;
+      }, []);
+    },
+
     loadQueueTask(q) {
+      if (!q) return;
+
       const queueItem = this.rentalQueue[q.value];
       this.products = queueItem.products;
       this.$store.commit("updateRentalProducts", queueItem.products);
@@ -265,7 +270,12 @@ export default {
       this.confirmCancel = false;
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
-      this.$router.push("/");
+      this.$router.push("/rental");
+      this.step = 1;
+      
+      if (this.rentalQueueSelected) {
+        this.updateRentalQueue();
+      }
     },
 
     rentalTypeChanged(type) {
@@ -401,7 +411,10 @@ export default {
         products: this.$store.state.rentalProducts,
         customer: this.$store.state.customer
       });
-      this.$offlineStorage.set("rental_queue", rentalQueue);
+      this.$offlineStorage .set("rental_queue", rentalQueue);
+      this.rentalQueue = rentalQueue;
+      this.genRentalQueueOptions();
+      this.rentalQueueSelected = null;
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
@@ -425,6 +438,7 @@ export default {
       this.rentalQueue.splice(this.rentalQueueSelected.value, 1);
       this.rentalQueueOptions.splice(this.rentalQueueSelected.value, 1);
       this.$offlineStorage.set("rental_queue", this.rentalQueue);
+      this.rentalQueueSelected = null;
     },
 
     returnItems: async function() {
