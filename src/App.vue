@@ -28,6 +28,26 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="unavailable" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="signal_wifi_off" color="primary" text-color="white" />
+          <span class="q-ml-sm">Deze module is momenteel niet beschikbaar.</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Naar Home" color="primary" @click="redirect('/')" v-close-popup />
+          <q-btn
+            flat
+            label="Naar Verhuren"
+            color="primary"
+            @click="redirect('/rental')"
+            v-close-popup
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-layout
       view="hHh Lpr lff"
       container
@@ -199,18 +219,75 @@ export default {
       confirmLogout: false,
       confirmClose: false,
       maxHeight: win.getContentSize()[1],
-      version
+      version,
+      offlineComponents: [
+        "Home",
+        "Rental",
+        "ContractItems",
+        "Login"
+      ],
+      unavailable: false
     };
   },
+
+  watch: {
+    $route(to, from) {
+      this.updateComponentUnavailable(to.name);
+    }
+  },
+
+  mounted() {
+    this.updateComponentUnavailable(this.$router.currentRoute.name);
+
+    this.$on("offline", () => {
+      if (this.offlineComponents.includes(this.$router.currentRoute.name)) {
+        this.unavailable = false;
+      } else {
+        this.unavailable = true;
+      }
+    });
+
+    this.$on("online", () => {
+      this.unavailable = false;
+    });
+  },
+
   computed: {
+    componentUnavailable() {
+      if (
+        this.isOnline ||
+        this.offlineComponents.includes(this.$router.currentRoute.name)
+      ) {
+        this.unavailable = false;
+      } else {
+        this.unavailable = true;
+      }
+
+      return this.unavailable;
+    },
+
     showUser() {
       return !!this.$store.state.user;
     },
+
     networkStatus() {
       return this.isOnline ? "Online" : "Offline";
     }
   },
+
   methods: {
+    updateComponentUnavailable(name) {
+      if (this.isOnline || this.offlineComponents.includes(name)) {
+        this.unavailable = false;
+      } else {
+        this.unavailable = true;
+      }
+    },
+
+    redirect(path) {
+      this.$router.push(path);
+    },
+
     handleResize() {
       this.maxHeight = win.getContentSize()[1];
     },

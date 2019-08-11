@@ -11,15 +11,20 @@ const instance = axios.create({
 });
 
 
-const setResponse = conf => () => {
-    return Promise.resolve({
+const setResponse = (conf, status = 200, statusText = "OK") => () => {
+    const o = {
         data: conf.data,
-        status: 200,
-        statusText: "OK",
+        status,
+        statusText,
         headers: conf.headers,
         config: conf,
         request: conf
-    });
+    };
+
+    if (status !== 200) {
+        return Promise.reject(o);
+    }
+    return Promise.resolve(o);
 };
 
 instance.interceptors.request.use(
@@ -36,7 +41,7 @@ instance.interceptors.request.use(
             }
 
             if (store.state.offline) {
-                conf.adapter = setResponse(conf);
+                conf.adapter = setResponse(conf, 500, "");
                 return conf;
             }
 
@@ -44,7 +49,7 @@ instance.interceptors.request.use(
         }
 
         if (conf.method.toLowerCase() !== 'get') {
-            conf.adapter = setResponse(conf);
+            conf.adapter = setResponse(conf, 500, "");
             return conf;
         }
 
@@ -89,7 +94,7 @@ instance.interceptors.request.use(
                 });
         }
 
-        conf.adapter = setResponse(conf);
+        conf.adapter = setResponse(conf, 500, "");
         return conf;
     },
     error => {

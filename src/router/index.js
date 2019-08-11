@@ -19,7 +19,7 @@ const routes = [
   },
   {
     path: '/',
-    name: 'home',
+    name: 'Home',
     component: Home,
     meta: {
       requiresAuth: true
@@ -27,7 +27,7 @@ const routes = [
   },
   {
     path: '/login',
-    name: 'login',
+    name: 'Login',
     component: Login,
     meta: {
       guest: true

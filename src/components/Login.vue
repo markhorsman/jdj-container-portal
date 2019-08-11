@@ -89,6 +89,7 @@ export default {
             DEPOT: this.depot.toUpperCase()
           })
           .then(res => {
+            console.log(res);
             localStorage.setItem("user", JSON.stringify(res.data));
             localStorage.setItem("api_key", res.data.SESSIONID);
 

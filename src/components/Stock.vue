@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import { sortBy } from 'lodash'
+import { sortBy } from "lodash";
 
 export default {
   name: "Stock",
@@ -226,7 +226,14 @@ export default {
       // calculate starting row of data
       let startRow = (page - 1) * rowsPerPage;
 
-      const buildFilter = () => `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${filter ? ` and startswith(ITEMNO, '${filter}')` : ``}${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}${this.statusInRent ? ` and STATUS eq 1` : ``}${this.statusInRepair ? ` and STATUS eq 2` : ``}`;
+      const buildFilter = () =>
+        `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${
+          filter ? ` and startswith(ITEMNO, '${filter}')` : ``
+        }${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}${
+          this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``
+        }${this.statusInRent ? ` and STATUS eq 1` : ``}${
+          this.statusInRepair ? ` and STATUS eq 2` : ``
+        }`;
 
       this.$api
         .get(
@@ -260,18 +267,32 @@ export default {
       ])
         .then(res => {
           const all = res[0].data;
-          this.groups.main = sortBy(res[1].data.reduce((acc, grp) => {
-            if (!acc.find(p => p.value === grp.PGROUP)) {
-              const group = all.find(p => p.CODE === grp.PGROUP);
-              if (group) acc.push({ label: `${grp.CODE} - ${grp.NAME}`, value: group.CODE });
-            }
-            return acc;
-          }, []), 'label');
+          this.groups.main = sortBy(
+            res[1].data.reduce((acc, grp) => {
+              if (!acc.find(p => p.value === grp.PGROUP)) {
+                const group = all.find(p => p.CODE === grp.PGROUP);
+                if (group)
+                  acc.push({
+                    label: `${grp.CODE} - ${grp.NAME}`,
+                    value: group.CODE
+                  });
+              }
+              return acc;
+            }, []),
+            "label"
+          );
 
-          this.groups.sub = sortBy(res[1].data.reduce((acc, grp) => {
-            acc.push({ label: `${grp.CODE} - ${grp.NAME}`, value: grp.CODE, pgroup: grp.PGROUP });
-            return acc;
-          }, []), 'label');
+          this.groups.sub = sortBy(
+            res[1].data.reduce((acc, grp) => {
+              acc.push({
+                label: `${grp.CODE} - ${grp.NAME}`,
+                value: grp.CODE,
+                pgroup: grp.PGROUP
+              });
+              return acc;
+            }, []),
+            "label"
+          );
 
           this.groupOptions = this.groups.main;
           this.subgroupOptions = this.groups.sub;
