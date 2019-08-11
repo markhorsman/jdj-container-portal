@@ -234,7 +234,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&$fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
         )
         .then(res => {
           this.pagination.page = page;

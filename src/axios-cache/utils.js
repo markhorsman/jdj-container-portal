@@ -39,4 +39,28 @@ const odataFilter = (odata, data) => {
     return rtn;
 }
 
-export default odataFilter;
+const prepOdataInput = url => {
+    let parts = url.split('&');
+    if (!parts || !parts.length) return false;
+
+    parts = url.split(parts[0]);
+    if (!parts || !parts.length) return false;
+
+    let rtn = parts[1].replace(/\n|\r/g, "").replace(/\s{2,}/g, "").substring(1);
+
+    if (rtn.indexOf('&fields') >= 0) {
+        rtn = rtn.replace('&fields', '&$select');
+    }
+
+    if (rtn.indexOf('&$fields') >= 0) {
+        rtn = rtn.replace('&$fields', '&$select');
+    }
+
+    return rtn;
+};
+
+
+export {
+    odataFilter,
+    prepOdataInput
+};

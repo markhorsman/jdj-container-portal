@@ -44,6 +44,12 @@ export default new Vue({
         concurrency: 3,
         fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT'],
         total: 0
+      },
+      contitems: {
+        top: 100,
+        concurrency: 3,
+        fields: ['RECID', 'CONTNO', 'ITEMNO', 'ITEMDESC', 'ITEMDESC2', 'ITEMDESC3', 'STATUS', 'QTY', 'MEMO'],
+        total: 0
       }
     }
   },
@@ -74,8 +80,9 @@ export default new Vue({
     },
 
     async buildCache() {
-      if (this.isOffline) return;
+      if (this.isOffline || !this.$store.state.api_key) return;
 
+      await this.buildContItemCache();
       await this.buildStockCache();
       await this.buildCustomerContactCache();
     },
@@ -105,6 +112,36 @@ export default new Vue({
       try {
         await this.setStorage('stock_all', stock);
         log.info(`${stock.length} stock records saved to disk`);
+      } catch (e) {
+        log.error(e);
+      }
+    },
+
+    async buildContItemCache() {
+      let items = []
+      const list = [];
+
+      this.cache.contitems.total = await this.getContItemsTotal();
+
+      if (!this.cache.contitems.total) return;
+
+      storage.setDataPath(`${os.tmpdir()}/insphire/contitems/${this.$config.default_contract_number}`);
+
+      const iterations = Math.ceil(this.cache.contitems.total / this.cache.contitems.top);
+      const max = this.cache.contitems.top;
+      for (let i = 0; i < iterations; i++) {
+        list.push(i * max);
+      }
+
+      const data = await Promise.all(list.map(throat(this.cache.contitems.concurrency, skip => this.getContItems(max, skip))));
+      items = data.reduce((acc, a) => {
+        acc.push.apply(acc, a);
+        return acc;
+      }, [])
+
+      try {
+        await this.setStorage('contitems_all', items);
+        log.info(`${items.length} contitem records saved to disk`);
       } catch (e) {
         log.error(e);
       }
@@ -158,7 +195,7 @@ export default new Vue({
     },
 
     async getStockTotal() {
-      if (this.isOffline) return Promise.resolve([]);
+      if (this.isOffline) return Promise.resolve(0);
 
       let res;
       try {
@@ -192,11 +229,11 @@ export default new Vue({
         res = await this.$api
           .get(
             `${this.$config.container_api_base_url}customercontact`,
-            { 
+            {
               auth: this.$config.container_api_basic_auth,
               headers: {
                 skipLoader: true,
-                skipCache: true 
+                skipCache: true
               }
             }
           )
@@ -219,7 +256,64 @@ export default new Vue({
       }
 
       return [];
-    }
+    },
+
+    async getContItems(top = 100, skip = 0) {
+      if (this.isOffline) return Promise.resolve([]);
+
+      let res;
+
+      try {
+        res = await this.$api
+          .get(
+            `${this.$config.api_base_url}contracts/${
+            this.$config.default_contract_number
+            }/items?api_key=${
+            this.$store.state.api_key
+            }&$top=${top}&$skip=${skip}&fields=${this.cache.contitems.fields.join(',')}`
+            , {
+              headers: {
+                skipLoader: true,
+                skipCache: true
+              }
+            })
+      } catch (e) {
+        log.error(e);
+      }
+
+      if (res && res.data) {
+        return res.data;
+      }
+
+      return [];
+    },
+
+    async getContItemsTotal() {
+      if (this.isOffline) return Promise.resolve(0);
+
+      let res;
+      try {
+        res = await this.$api
+          .get(
+            `${this.$config.api_base_url}contracts/${
+            this.$config.default_contract_number
+            }/items?api_key=${
+            this.$store.state.api_key
+            }&$top=1&$skip=0&$inlinecount=allpages&fields=RECID,ITEMNO`
+            , {
+              headers: {
+                skipLoader: true,
+                skipCache: true
+              }
+            });
+      } catch (e) {
+        log.error(e);
+      }
+
+      if (!res || !res.data) return 0;
+
+      return res.data.totalCount;
+    },
   },
   mounted() {
     this.$store.commit("updateNetworkStatus", this.isOffline);
