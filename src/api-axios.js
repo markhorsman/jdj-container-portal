@@ -4,6 +4,7 @@ import { eventHub } from './eventhub'
 import getStock from './axios-cache/stock';
 import getCustomerContact from './axios-cache/customerContact'
 import getContItems from './axios-cache/contItem'
+import getFAQ from './axios-cache/faq'
 
 const instance = axios.create({
     timeout: 10000
@@ -45,6 +46,16 @@ instance.interceptors.request.use(
         if (conf.method.toLowerCase() !== 'get') {
             conf.adapter = setResponse(conf);
             return conf;
+        }
+
+        if (conf.url.indexOf('spreadsheets.google.com') >= 0) {
+            return getFAQ()
+                .then(data => {
+                    conf.data = data;
+                    conf.adapter = setResponse(conf);
+
+                    return conf;
+                })
         }
 
         if (conf.url.indexOf('customercontact') >= 0) {

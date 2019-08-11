@@ -82,9 +82,33 @@ export default new Vue({
     async buildCache() {
       if (this.isOffline || !this.$store.state.api_key) return;
 
+      await this.cacheFAQItems();
       await this.buildContItemCache();
       await this.buildStockCache();
       await this.buildCustomerContactCache();
+    },
+
+    async cacheFAQItems() {
+      let result;
+      try {
+        result = await this.$api
+          .get(
+            `https://spreadsheets.google.com/feeds/cells/${this.$config.spreadsheet_id}/1/public/full?alt=json`
+          );
+      } catch (e) {
+        log.error(e);
+      }
+
+      if (!result || !result.data) return;
+
+      storage.setDataPath(`${os.tmpdir()}/insphire/FAQ`);
+
+      try {
+        await this.setStorage('FAQ', result.data);
+        log.info(`FAQ data saved to disk`);
+      } catch (e) {
+        log.error(e);
+      }
     },
 
     async buildStockCache() {
