@@ -1,5 +1,52 @@
 <template>
   <div class="q-px-lg q-pb-md">
+    <q-dialog v-model="genList" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="fas fa-scroll" color="primary" text-color="white" />
+          <span class="q-ml-sm">Wil je de artikelen mailen of printen?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
+          <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="chooseEmail" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="email" color="primary" text-color="white" />
+          <span class="q-ml-sm">Naar wie mag de e-mail verstuurd worden?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-input
+            v-model="emailaddress"
+            filled
+            type="email"
+            placeholder="E-mailadres"
+            class="full-width"
+            error-message="Ongeldig E-mailadres"
+            :error="!isValidEmail"
+            :rules="[val => !!val || 'E-mailadres is verplicht']"
+          />
+          <br />
+          <q-btn
+            flat
+            label="Versturen"
+            color="primary"
+            icon="email"
+            @click="email"
+            :disabled="!emailaddress.length || !isValidEmail"
+          />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-table
       title="Artikelen"
       :data="tableData"
@@ -11,6 +58,15 @@
       :pagination.sync="pagination"
       @request="onRequest"
     >
+      <template v-slot:top-left>
+        <q-btn
+          dense
+          color="primary"
+          :disabled="!tableData.length"
+          label="Printen/mailen"
+          @click="genList = true;"
+        />
+      </template>
       <template v-slot:top-right>
         <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoek op naam">
           <template v-slot:append>
@@ -24,6 +80,9 @@
 
 <script>
 import { NFC } from "nfc-pcsc";
+import { eventHub } from "../eventhub";
+import { emailContractItems } from "../mailer";
+import printJS from "print-js";
 
 export default {
   name: "Items",
@@ -91,13 +150,25 @@ export default {
           field: row => row.MEMO,
           format: val => `${val}`,
           sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
         }
       ],
       tableData: [],
       filter: "",
       loading: false,
       uid: null,
-      readers: []
+      readers: [],
+      genList: false,
+      chooseEmail: false,
+      emailaddress: this.$config.email.default_email
     };
   },
 
@@ -136,6 +207,13 @@ export default {
       pagination: this.pagination,
       filter: undefined
     });
+  },
+
+  computed: {
+    isValidEmail() {
+      var re = /\S+@\S+\.\S+/;
+      return re.test(this.emailaddress);
+    }
   },
 
   methods: {
@@ -198,7 +276,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO`
+          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY`
         )
         .then(res => {
           this.pagination.page = page;
@@ -211,6 +289,50 @@ export default {
         })
         .catch(() => {})
         .finally(() => (this.loading = false));
+    },
+
+    print() {
+      const properties = [
+        { field: "ITEMNO", displayName: "Artikelnummer" },
+        { field: "ITEMDESC", displayName: "Omschrijving" },
+        { field: "QTY", displayName: "Aantal" }
+      ];
+
+      printJS({
+        printable: this.tableData,
+        type: "json",
+        properties,
+        documentTitle: "Artikelen op contract"
+      });
+    },
+
+    email() {
+      const list = this.tableData;
+      this.chooseEmail = false;
+      eventHub.$emit("before-request");
+
+      return emailContractItems(
+        list,
+        this.emailaddress,
+        "Artikelen op contract"
+      )
+        .then(info => {
+          this.$q.notify({
+            color: "green-4",
+            icon: "fas fa-exclamation-triangle",
+            message: `De lijst met ${list.length} artikelen is verzonden.`
+          });
+        })
+        .catch(e => {
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Email versturen mislukt.`
+          });
+        })
+        .finally(() => {
+          eventHub.$emit("after-response");
+        });
     }
   },
 

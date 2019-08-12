@@ -53,5 +53,50 @@ const emailStockCount = (products, email, subject, intro) => {
 
 };
 
-export default emailStockCount;
+const emailContractItems = (products, email, subject) => {
+    let body = `
+    <p>Beste heer/mevrouw,</p>
+    <p>Onderstaand vindt u een lijst met alle artikelen die momenteel op uw naam staan:</p>
+    <table>
+    <thead>
+        <tr>
+            <th>Artikelnummer</th>
+            <th>Omschrijving</th>
+            <th>Aantal</th>
+        </tr>
+    </thead>
+    <tbody>
+    `;
+
+    products.forEach(p => body += `
+    <tr>
+        <td>${p.ITEMNO}</td>
+        <td>${p.ITEMDESC}</td>
+        <td>${p.QTY}</td>
+    </tr>`);
+
+    body += '</tbody></table>';
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: config.email.auth
+    });
+
+    const mailOptions = {
+        from: config.email.from, // sender address
+        to: email, // list of receivers
+        subject, // Subject line
+        html: body, // html body
+    };
+
+    return new Promise((resolve, reject) => {
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) return reject(error);
+            return resolve(info);
+        });
+    });
+
+};
+
+export { emailStockCount, emailContractItems };
 

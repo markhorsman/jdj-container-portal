@@ -191,7 +191,7 @@
 <script>
 import { findIndex, clone } from "lodash";
 import { eventHub } from "../eventhub";
-import emailStockCount from "../mailer";
+import { emailStockCount } from "../mailer";
 import printJS from "print-js";
 
 export default {
@@ -574,7 +574,7 @@ export default {
       return emailStockCount(list, this.emailaddress, subject, intro)
         .then(info => {
           this.$q.notify({
-            color: "red-5",
+            color: "green-4",
             icon: "fas fa-exclamation-triangle",
             message: `De lijst met ${list.length} producten is verzonden.`
           });
