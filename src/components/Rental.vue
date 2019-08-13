@@ -61,7 +61,9 @@
       </q-step>
 
       <q-step :name="3" title="Artikelen scannen" icon="build" :done="step > 3">
-        <ReadProduct />
+        <ReadProduct
+          :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
+        />
         <ContractItems v-if="rentalType === 'return'" />
       </q-step>
 
@@ -89,7 +91,7 @@
           <q-btn
             @click="step === 4 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
-            :label="step === 4 ? 'Bevestigen' : 'Volgende'"
+            :label="step === 4 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
             :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts)"
           />
           <q-btn
@@ -272,7 +274,7 @@ export default {
       this.$store.commit("updateCustomer", null);
       this.$router.push("/rental");
       this.step = 1;
-      
+
       if (this.rentalQueueSelected) {
         this.updateRentalQueue();
       }
@@ -346,23 +348,63 @@ export default {
       } catch (e) {
         result = e;
       }
+
+      try {
+        const body = { RECID: recid };
+        result.config.data = JSON.stringify(body);
+      } catch (e) {
+        console.log(e);
+      }
+
       return result;
     },
 
     offhireContractItem: async function(recid, item) {
+      let body = {
+        QTYOK: item.QTYOK,
+        QTYDAM: item.QTYDAM,
+        QTYLOST: item.QTYLOST,
+        DAMAGE: "",
+        DEPOT: this.$store.state.user.DEPOT,
+        DAMAGEPHOTO: ""
+      };
+
       let result;
       try {
         result = await this.$api.post(
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
           )}/offhire?api_key=${this.$store.state.api_key}`,
+          body
+        );
+      } catch (e) {
+        result = e;
+      }
+
+      try {
+        body = JSON.parse(result.config.data);
+        body.ITEMNO = item.ITEMNO;
+        result.config.data = JSON.stringify(body);
+      } catch (e) {
+        console.log(e);
+      }
+
+      return result;
+    },
+
+    offhireConfirmItem: async function(contno, item) {
+      let result;
+      try {
+        result = await this.$api.post(
+          `${this.$config.container_api_base_url}offhire`,
           {
-            QTYOK: item.QTYOK,
-            QTYDAM: item.QTYDAM,
-            QTYLOST: item.QTYLOST,
-            DAMAGE: "",
-            DEPOT: this.$store.state.user.DEPOT,
-            DAMAGEPHOTO: ""
+            CONTNO: contno,
+            ITEMNO: item.ITEMNO,
+            QTY: item.QTY,
+            USERNAME: this.$store.state.user.USERNAME
+          },
+          {
+            auth: this.$config.container_api_basic_auth
           }
         );
       } catch (e) {
@@ -411,7 +453,7 @@ export default {
         products: this.$store.state.rentalProducts,
         customer: this.$store.state.customer
       });
-      this.$offlineStorage .set("rental_queue", rentalQueue);
+      this.$offlineStorage.set("rental_queue", rentalQueue);
       this.rentalQueue = rentalQueue;
       this.genRentalQueueOptions();
       this.rentalQueueSelected = null;
@@ -456,6 +498,7 @@ export default {
 
       const products = [];
       const processed = [];
+      const confirmed = [];
       let failed = 0;
 
       const response = await this.getContractItems();
@@ -487,11 +530,23 @@ export default {
       const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
       contItemOffhireResults.forEach(r => {
+        let body;
+
+        if (r.config.data) {
+          body = JSON.parse(r.config.data);
+        }
+
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
-            const body = JSON.parse(r.config.data);
-            this.notify(`${body.Itemno} niet toegevoegd aan contract`);
+            this.notify(r.data.Message);
+          } else if (body && body.ITEMNO) {
+            this.notify(`${body.ITEMNO} niet uit huur gehaald.`);
+          }
+        } else {
+          if (body && body.ITEMNO) {
+            const p = products.find(p => p.ITEMNO === body.ITEMNO);
+            if (p) processed.push(p);
           }
         }
       });
@@ -501,24 +556,60 @@ export default {
         return;
       }
 
-      // TODO: if one or more failed, and at least one succeeded, remove the succeeded items from store.
+      failed = 0;
+      const offhireConfirmRequests = processed.map(async p => {
+        return await this.offhireConfirmItem(
+          this.$config.default_contract_number,
+          p
+        );
+      });
 
-      // TODO: notify if one or more stock updates failed?
+      // TODO: max x concurrent (throat)
+      const offhireConfirmResults = await Promise.all(offhireConfirmRequests);
 
-      this.$store.commit("updateRentalProducts", []);
-      this.$store.commit("updateCustomer", null);
+      offhireConfirmResults.forEach(r => {
+        let body;
+        if (r.config.data) {
+          body = JSON.parse(r.config.data);
+        }
+
+        if (!r || r.status > 201) {
+          failed++;
+          console.log(r);
+          this.notify(`${body.ITEMNO} niet uit huur gehaald.`);
+        } else {
+          if (body && body.ITEMNO) {
+            const p = products.find(p => p.ITEMNO === body.ITEMNO);
+            if (p) confirmed.push(p);
+          }
+        }
+      });
+
+      if (failed) {
+        this.notify(
+          `Er ${processed.length > 1 ? "zijn" : "is"} ${processed.length} contract item${
+            processed.length > 1 ? "s" : ""
+          } uit huur gehaald. Maar niet allemaal bevestigd.`,
+          "success",
+          5000
+        );
+      } else {
+        this.notify(
+          `Er ${processed.length > 1 ? "zijn" : "is"} ${processed.length} contract item${
+            processed.length > 1 ? "s" : ""
+          } uit huur gehaald.`,
+          "success",
+          5000
+        );
+      }
 
       // remove from queue
       if (this.rentalQueueSelected) {
         this.updateRentalQueue();
       }
 
-      this.notify(
-        `Er zijn ${contItemOffhireResults.length -
-          failed} contract items uit huur gehaald.`,
-        "success",
-        5000
-      );
+      this.$store.commit("updateRentalProducts", []);
+      this.$store.commit("updateCustomer", null);
 
       this.step = 1;
       this.$router.push("/rental");
@@ -541,6 +632,7 @@ export default {
       let deliverFailed = 0;
       const products = [];
       const stockItems = [];
+      const delivered = [];
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
 
       const res = await this.getContract();
@@ -607,23 +699,35 @@ export default {
       const contItemDeliverResults = await Promise.all(deliverContItemRequests);
 
       contItemDeliverResults.forEach(r => {
+        let body, stock;
+
+        if (r.config.data) {
+          body = JSON.parse(r.config.data);
+          stock = this.$store.state.rentalProducts.find(
+            p => p.RECID === body.RECID
+          );
+        }
+
         if (!r || r.status > 201) {
           deliverFailed++;
           if (r.data && r.data.Message) {
-            const body = JSON.parse(r.config.data);
             this.notify(r.data.Message);
+          } else if (stock) {
+            this.notify(`${stock.ITEMNO} niet afgeleverd.`);
           }
+        } else {
+          if (stock) delivered.push(stock);
         }
       });
 
       // remove the ones that succeeded from store
-      // if (failed && stockItems.length) {
-      //   stockItems.forEach(s => {
-      //     this.removeLocalProductByItemNumber(s.ITEMNO);
-      //   });
-      // }
+      if (failed && stockItems.length) {
+        stockItems.forEach(s => {
+          this.removeLocalProductByItemNumber(s.ITEMNO);
+        });
 
-      // TODO: notify if one or more updates failed?
+        return;
+      }
 
       // remove from queue
       if (this.rentalQueueSelected) {
@@ -633,9 +737,11 @@ export default {
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
 
+      const total = contItemDeliverResults.length - deliverFailed;
       this.notify(
-        `Er zijn ${contItemDeliverResults.length -
-          deliverFailed} contract items in huur gezet.`,
+        `Er ${total > 1 ? "zijn" : "is"} ${total} contract item${
+          total > 1 ? "s" : ""
+        } in huur gezet.`,
         "success",
         5000
       );

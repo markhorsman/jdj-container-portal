@@ -77,7 +77,6 @@
             @click="drawer = !drawer"
             aria-label="Menu"
             icon="menu"
-            color="black"
           />
 
           <q-toolbar-title class="pull-right">

@@ -54,7 +54,7 @@
       row-key="RECID"
       :loading="loading"
       :filter="filter"
-      :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 0]"
+      :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100, 200, 300]"
       :pagination.sync="pagination"
       @request="onRequest"
     >

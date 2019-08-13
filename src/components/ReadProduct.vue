@@ -5,7 +5,7 @@
     >Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
     <q-table
       v-if="products.length"
-      title="Artikelen"
+      :title="title"
       :data="products"
       :columns="columns"
       :visible-columns="visibleColumns"
@@ -198,6 +198,8 @@ import os from "os";
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
 export default {
   name: "ReadProduct",
+
+  props: ['title'],
 
   data() {
     return {

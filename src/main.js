@@ -80,7 +80,12 @@ export default new Vue({
     },
 
     async buildCache() {
-      if (this.isOffline || !this.$store.state.api_key) return;
+      if (this.isOffline ||
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT ||
+        this.refreshing
+      ) return;
 
       await this.cacheFAQItems();
       await this.buildContItemCache();
