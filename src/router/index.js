@@ -46,7 +46,8 @@ const routes = [
     name: 'Items',
     component: Items,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      isAdmin: true
     }
   },
   {
@@ -54,7 +55,8 @@ const routes = [
     name: 'Stock',
     component: Stock,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      isAdmin: true
     }
   },
   {
@@ -78,7 +80,8 @@ const routes = [
     name: 'CustomerContact',
     component: CustomerContact,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      isAdmin: true
     }
   },
 ]
@@ -98,12 +101,14 @@ router.beforeEach((to, from, next) => {
       })
     } else {
       let user = JSON.parse(localStorage.getItem('user'))
-
-      if (to.matched.some(record => record.meta.is_admin)) {
-        if (user.is_admin == 1)
+      
+      if (to.matched.some(record => !record.meta.isAdmin)) {
+        if (!user.GRPCODE || user.GRPCODE === 'API') {
           next()
-        else
-          next({ name: 'home' })
+        } else {
+          next({ name: 'Home' })
+        }
+          
       } else {
         next()
       }
@@ -112,7 +117,7 @@ router.beforeEach((to, from, next) => {
     if (localStorage.getItem('api_key') == null)
       next()
     else
-      next({ name: 'home' })
+      next({ name: 'Home' })
   } else {
     next()
   }

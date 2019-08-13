@@ -70,39 +70,85 @@ export default {
         dirty: validation.$dirty
       };
     },
+
     onReset(e) {
       this.username = "";
       this.password = "";
       this.depot = "";
     },
-    handleSubmit(e) {
+
+    async logon() {
+      let result;
+
+      try {
+        result = await this.$api
+          .post(`${this.$config.api_base_url}/sessions/logon`, {
+            USERNAME: this.username,
+            PASSWORD: this.password,
+            DEPOT: this.depot.toUpperCase()
+          });
+      } catch (e) {
+        console.log(e);
+        result = false;
+      }
+
+      return result;
+    },
+
+    async getUser(key, recid) {
+      let result, user;
+
+      try {
+        result = await this.$api
+        .get(
+          `${this.$config.api_base_url}users/?api_key=${key}&$fields=RECID,GRPCODE`
+        )
+      } catch (e) {
+        console.log(e);
+        result = false;
+        user = false;
+      }
+
+      if (result && result.data && result.data.length) {
+        user = result.data.find(u => u.NAME === this.username && u.PASSWORD === this.password);
+      }
+
+      return user;
+    },
+
+    async handleSubmit(e) {
       e.preventDefault();
       this.errored = false;
 
       this.$v.$touch();
 
       if (!this.$v.$invalid) {
-        return this.$api
-          .post(`${this.$config.api_base_url}/sessions/logon`, {
-            USERNAME: this.username,
-            PASSWORD: this.password,
-            DEPOT: this.depot.toUpperCase()
-          })
-          .then(res => {
-            localStorage.setItem("user", JSON.stringify(res.data));
-            localStorage.setItem("api_key", res.data.SESSIONID);
+        let result = await this.logon();
 
-            if (localStorage.getItem("api_key") != null) {
-              this.$store.commit("login", res.data);
+        if (!result) {
+          this.errored = true;
+          return;
+        }
 
-              if (this.$route.params.nextUrl != null)
-                this.$router.push(this.$route.params.nextUrl);
-              else this.$router.push("/");
-            }
-          })
-          .catch(e => {
-            this.errored = true;
-          });
+        const user = result.data;
+        result = await this.getUser(user.SESSIONID, user.RECID);
+
+        if (result) {
+          user.GRPCODE = result.GRPCODE;
+        }
+        
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("api_key", user.SESSIONID);
+
+        if (localStorage.getItem("api_key") != null) {
+          this.$store.commit("login", user);
+
+          if (this.$route.params.nextUrl != null) {
+            this.$router.push(this.$route.params.nextUrl);
+          } else {
+            this.$router.push("/");
+          } 
+        }
       }
     }
   }

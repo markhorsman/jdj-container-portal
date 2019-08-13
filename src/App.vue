@@ -114,7 +114,7 @@
                 <q-item-label>Home</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/rental">
+            <q-item clickable tag="a" to="/rental" v-if="!userInAPIGroup">
               <q-item-section avatar>
                 <q-icon name="add_shopping_cart" />
               </q-item-section>
@@ -141,7 +141,7 @@
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/stocktransfer">
+            <q-item clickable tag="a" to="/stocktransfer" v-if="!userInAPIGroup">
               <q-item-section avatar>
                 <q-icon name="fas fa-exchange-alt" />
               </q-item-section>
@@ -150,7 +150,7 @@
                 <q-item-label caption>Depot transfer</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/stockcount">
+            <q-item clickable tag="a" to="/stockcount" v-if="!userInAPIGroup">
               <q-item-section avatar>
                 <q-icon name="fas fa-calculator" />
               </q-item-section>
@@ -271,6 +271,12 @@ export default {
 
     networkStatus() {
       return this.isOnline ? "Online" : "Offline";
+    },
+
+    userInAPIGroup(){
+      return this.$store.state.user && 
+      this.$store.state.user.GRPCODE && 
+      this.$store.state.user.GRPCODE === 'API'
     }
   },
 
@@ -291,7 +297,16 @@ export default {
       this.maxHeight = win.getContentSize()[1];
     },
 
-    logout() {
+    async logout() {
+      let result;
+
+      // try {
+      //   result = await this.$api.post(`${this.$config.api_base_url}sessions/logoff/${this.$store.state.api_key}`);
+      // } catch (e) {
+      //   console.log(e);
+      //   result = false;
+      // }
+
       this.$store.commit("logout");
     },
 
