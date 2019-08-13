@@ -38,6 +38,7 @@
         <q-card-actions align="right">
           <q-btn flat label="Naar Home" color="primary" @click="redirect('/')" v-close-popup />
           <q-btn
+            v-if="!userInAPIGroup"
             flat
             label="Naar Verhuren"
             color="primary"
@@ -123,7 +124,7 @@
                 <q-item-label caption>In/uit huur producten</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/items">
+            <q-item clickable tag="a" to="/items" v-if="isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-scroll" />
               </q-item-section>
@@ -132,7 +133,7 @@
                 <q-item-label caption>Artikelen in contract</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/stock">
+            <q-item clickable tag="a" to="/stock" v-if="isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-boxes" />
               </q-item-section>
@@ -141,7 +142,7 @@
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/stocktransfer" v-if="!userInAPIGroup">
+            <q-item clickable tag="a" to="/stocktransfer" v-if="!userInAPIGroup && isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-exchange-alt" />
               </q-item-section>
@@ -150,7 +151,7 @@
                 <q-item-label caption>Depot transfer</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/stockcount" v-if="!userInAPIGroup">
+            <q-item clickable tag="a" to="/stockcount" v-if="!userInAPIGroup && isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-calculator" />
               </q-item-section>
@@ -159,7 +160,7 @@
                 <q-item-label caption>Tellijsten genereren</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/customercontact">
+            <q-item clickable tag="a" to="/customercontact"  v-if="isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-id-badge" />
               </q-item-section>
