@@ -429,7 +429,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc`
         );
       } catch (e) {
         result = null;
