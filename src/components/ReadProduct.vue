@@ -195,11 +195,14 @@
 <script>
 import storage from "electron-json-storage";
 import os from "os";
+import { eventHub } from "../eventhub";
+
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
+
 export default {
   name: "ReadProduct",
 
-  props: ['title'],
+  props: ["title", "isOffhire"],
 
   data() {
     return {
@@ -370,6 +373,7 @@ export default {
         }, 200);
       }
     },
+
     notifyNotFound: function() {
       this.$q.notify({
         color: "red-5",
@@ -377,6 +381,27 @@ export default {
         message: `Product met nummer ${this.itemnumber} niet gevonden.`
       });
     },
+
+    addProduct(found) {
+      const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
+
+      if (p && !p.UNIQUE) {
+        p.QTY = parseInt(p.QTY) + 1;
+      } else if (p && p.UNIQUE) {
+        // notify?
+      } else {
+        this.products.push(
+          Object.assign(found, {
+            QTY: 1,
+            QTYDAM: 0,
+            QTYLOST: 0,
+            QTYOK: 1
+          })
+        );
+      }
+      this.$store.commit("updateRentalProducts", this.products);
+    },
+
     getProduct: function() {
       this.$api
         .get(
@@ -384,23 +409,15 @@ export default {
         )
         .then(res => {
           if (res && res.data && res.data.length) {
-            const p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO);
+            const found = res.data[0];
 
-            if (p && !p.UNIQUE) {
-              p.QTY = parseInt(p.QTY) + 1;
-            } else if (p && p.UNIQUE) {
-              // notify?
-            } else {
-              this.products.push(
-                Object.assign(res.data[0], {
-                  QTY: 1,
-                  QTYDAM: 0,
-                  QTYLOST: 0,
-                  QTYOK: 1
-                })
-              );
+            // send signal
+            if (!found.UNIQUE && isOffhire) {
+              eventHub.$emit("offhire-check-contitem", found);
+              return;
             }
-            this.$store.commit("updateRentalProducts", this.products);
+
+            this.addProduct(found);
           } else {
             this.notifyNotFound();
           }
@@ -409,6 +426,14 @@ export default {
           this.notifyNotFound();
         });
     }
+  },
+
+  created() {
+    eventHub.$on("add-product", this.addProduct);
+  },
+
+  beforeDestroy() {
+    eventHub.$off("add-product", this.addProduct);
   },
 
   destroyed() {

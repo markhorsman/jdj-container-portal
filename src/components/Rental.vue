@@ -63,6 +63,7 @@
       <q-step :name="3" title="Artikelen scannen" icon="build" :done="step > 3">
         <ReadProduct
           :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
+          :isOffhire="rentalType === 'return'"
         />
         <ContractItems v-if="rentalType === 'return'" />
       </q-step>
@@ -287,43 +288,6 @@ export default {
       }, []);
     },
 
-    updateContItemRequest: async function(recid, status) {
-      let result;
-      try {
-        result = await this.$api.put(
-          `${this.$config.container_api_base_url}contitem/${encodeURIComponent(
-            recid
-          )}/${status}`,
-          {},
-          { auth: this.$config.container_api_basic_auth }
-        );
-      } catch (e) {
-        result = e;
-      }
-      return result;
-    },
-
-    updateStockRequest: async function(recid, status, quantity, type, unqiue) {
-      let result;
-      try {
-        result = await this.$api.put(
-          `${this.$config.container_api_base_url}stock/${encodeURIComponent(
-            recid
-          )}`,
-          {
-            status,
-            quantity,
-            type,
-            unqiue
-          },
-          { auth: this.$config.container_api_basic_auth }
-        );
-      } catch (e) {
-        result = e;
-      }
-      return result;
-    },
-
     createContItemRequest: async function(item) {
       let result;
       try {
@@ -401,7 +365,8 @@ export default {
             CONTNO: contno,
             ITEMNO: item.ITEMNO,
             QTY: item.QTY,
-            USERNAME: this.$store.state.user.USERNAME
+            USERNAME: this.$store.state.user.USERNAME,
+            MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
           },
           {
             auth: this.$config.container_api_basic_auth
@@ -429,7 +394,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=RECID,ITEMNO,MEMO`
         );
       } catch (e) {
         result = null;
@@ -512,8 +477,22 @@ export default {
       }
 
       this.$store.state.rentalProducts.forEach(p => {
-        const match = items.find(obj => obj.ITEMNO === p.ITEMNO);
-        if (match) products.push(Object.assign(p, { RECID: match.RECID }));
+        let match;
+
+        if (p.UNIQUE) {
+          match = items.find(obj => obj.ITEMNO === p.ITEMNO);
+        } else {
+          match = items.find(
+            obj =>
+              obj.ITEMNO === p.ITEMNO &&
+              obj.MEMO ===
+                `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
+          );
+        }
+
+        if (match) {
+          products.push(Object.assign(p, { RECID: match.RECID }));
+        }
       });
 
       if (!products.length) {
@@ -587,7 +566,9 @@ export default {
 
       if (failed) {
         this.notify(
-          `Er ${processed.length > 1 ? "zijn" : "is"} ${processed.length} contract item${
+          `Er ${processed.length > 1 ? "zijn" : "is"} ${
+            processed.length
+          } contract item${
             processed.length > 1 ? "s" : ""
           } uit huur gehaald. Maar niet allemaal bevestigd.`,
           "success",
@@ -595,9 +576,9 @@ export default {
         );
       } else {
         this.notify(
-          `Er ${processed.length > 1 ? "zijn" : "is"} ${processed.length} contract item${
-            processed.length > 1 ? "s" : ""
-          } uit huur gehaald.`,
+          `Er ${processed.length > 1 ? "zijn" : "is"} ${
+            processed.length
+          } contract item${processed.length > 1 ? "s" : ""} uit huur gehaald.`,
           "success",
           5000
         );
@@ -660,7 +641,7 @@ export default {
             Qty: p.QTY,
             Sellingprice: 0,
             Istextitem: 0,
-            Memo: this.$store.state.customer.NAME,
+            Memo: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`,
             Deldate: d,
             Hiredate: d,
             Estretd: estretd

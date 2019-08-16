@@ -12,12 +12,15 @@
 </template>
 
 <script>
+import { eventHub } from "../eventhub";
+
 export default {
   name: "ContractItems",
 
   data() {
     return {
       items: [],
+      memo: null,
       columns: [
         {
           name: "ITEMNO",
@@ -45,16 +48,28 @@ export default {
           field: row => row.QTY,
           format: val => `${val}`,
           sortable: true
-        },
+        }
       ]
     };
   },
 
   mounted() {
     this.getItems();
+
+    if (this.$store.state.customer) {
+      this.memo = `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`;
+    }
   },
 
   methods: {
+    notifyWrongCustomerOffhire: function(itemno) {
+      this.$q.notify({
+        color: "red-5",
+        icon: "fas fa-exclamation-triangle",
+        message: `Product ${itemno} staat niet in huur bij de huidige klant.`
+      });
+    },
+
     getItems: function() {
       this.$api
         .get(
@@ -63,14 +78,30 @@ export default {
         .then(res => {
           if (res && res.data && res.data.length) {
             res.data.forEach(p => {
-              if (p.MEMO === this.$store.state.customer.NAME) {
+              if (p.MEMO === this.memo) {
                 this.items.push(p);
               }
             });
           }
         })
         .catch(() => {});
+    },
+
+    checkContItem(stockItem) {
+      if (!this.items.find(item => item.ITEMNO === stockItem.ITEMNO)) {
+        this.notifyWrongCustomerOffhire(stockItem.ITEMNO);
+      } else {
+        eventHub.$emit("add-product", stockItem);
+      }
     }
+  },
+
+  created() {
+    eventHub.$on("offhire-check-contitem", this.checkContItem);
+  },
+
+  beforeDestroy() {
+    eventHub.$off("offhire-check-contitem", this.checkContItem);
   }
 };
 </script>

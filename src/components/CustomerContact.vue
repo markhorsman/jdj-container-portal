@@ -304,7 +304,7 @@ export default {
     getCustomers() {
       this.$api
         .get(
-          `${this.$config.api_base_url}customers?api_key=${this.$store.state.api_key}&$fields=&$orderby=NAME asc&$fields=RECID,ACCT,NAME`
+          `${this.$config.api_base_url}customers?api_key=${this.$store.state.api_key}&$orderby=NAME asc&fields=RECID,ACCT,NAME`
         )
         .then(res => {
           this.customerOptions = res.data.reduce((acc, c) => {
