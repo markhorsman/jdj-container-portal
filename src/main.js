@@ -36,8 +36,11 @@ export default new Vue({
   el: '#app',
   data: {
     refreshing: false,
+    caching: false,
     interval: null,
+    cacheInterval: null,
     refresh: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 5 * 60 * 1000,
     cache: {
       stock: {
         top: 100,
@@ -54,20 +57,23 @@ export default new Vue({
     }
   },
   methods: {
-    refreshSession() {
+    async refreshSession() {
       if (!this.$store.state.api_key || this.refreshing) return;
       this.refreshing = true;
-      this.$api
+
+      let result;
+      try {
+        result = await this.$api
         .get(
           `${this.$config.api_base_url}users/?api_key=${this.$store.state.api_key}&top=1`, {
             headers: {
               skipLoader: true
             }
           }
-        )
-        .finally(() => {
-          this.refreshing = false;
-        })
+        );
+      } catch (e) {
+        console.log(e);
+      }
     },
 
     async setStorage(key, val) {
@@ -84,7 +90,7 @@ export default new Vue({
         !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT ||
-        this.refreshing
+        this.caching
       ) return;
 
       await this.cacheFAQItems();
@@ -117,14 +123,20 @@ export default new Vue({
     },
 
     async buildStockCache() {
+      if (this.isOffline ||
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) return [];
+
       let stock = []
       const list = [];
 
       this.cache.stock.total = await this.getStockTotal();
 
-      if (!this.cache.stock.total) return;
+      if (!this.cache.stock.total) return [];
 
-      storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
+      storage.setDataPath(`${os.tmpdir()}/insphire/stock/${this.$store.state.user.DEPOT}`);
 
       const iterations = Math.ceil(this.cache.stock.total / this.cache.stock.top);
       const max = this.cache.stock.top;
@@ -147,6 +159,12 @@ export default new Vue({
     },
 
     async buildContItemCache() {
+      if (this.isOffline ||
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) return [];
+
       let items = []
       const list = [];
 
@@ -188,7 +206,14 @@ export default new Vue({
     },
 
     async getStockItems(top = 100, skip = 0) {
-      if (this.isOffline) return Promise.resolve([]);
+      if (
+        this.isOffline || 
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) {
+          return Promise.resolve([]);
+      }
 
       let res;
       try {
@@ -224,7 +249,14 @@ export default new Vue({
     },
 
     async getStockTotal() {
-      if (this.isOffline) return Promise.resolve(0);
+      if (
+        this.isOffline || 
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) {
+          return Promise.resolve(0);
+      }
 
       let res;
       try {
@@ -288,7 +320,14 @@ export default new Vue({
     },
 
     async getContItems(top = 100, skip = 0) {
-      if (this.isOffline) return Promise.resolve([]);
+      if (
+        this.isOffline || 
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) {
+          return Promise.resolve([]);
+      }
 
       let res;
 
@@ -318,7 +357,14 @@ export default new Vue({
     },
 
     async getContItemsTotal() {
-      if (this.isOffline) return Promise.resolve(0);
+      if (
+        this.isOffline || 
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) {
+          return Promise.resolve(0);
+      }
 
       let res;
       try {
@@ -344,7 +390,7 @@ export default new Vue({
       return res.data.totalCount;
     },
   },
-  mounted() {
+  async mounted() {
     this.$store.commit("updateNetworkStatus", this.isOffline);
 
     this.$on("offline", () => {
@@ -355,15 +401,20 @@ export default new Vue({
       this.$store.commit("updateNetworkStatus", false);
     });
 
-    this.refreshSession();
-    this.buildCache();
+    await this.refreshSession();
+    await this.buildCache();
 
-    this.interval = setInterval(function () {
-      this.refreshSession();
+    this.interval = setInterval(async function () {
+      await this.refreshSession();
     }.bind(this), this.refresh);
+
+    this.cacheInterval = setInterval(async function () {
+      await this.buildCache();
+    }.bind(this), this.cacheTime);
   },
   destroyed() {
     if (this.interval) clearInterval(this.interval);
+    if (this.cacheInterval) clearInterval(this.cacheInterval);
   },
   render: h => h(App),
   router,

@@ -2,9 +2,10 @@ import storage from 'electron-json-storage'
 import os from 'os'
 import parser from 'odata-parser'
 import log from 'electron-log'
+import store from '../store' 
 import { odataFilter, prepOdataInput } from './utils'
 
-const dataPath = `${os.tmpdir()}/insphire/stock`;
+const dataPath = `${os.tmpdir()}/insphire/stock/${(store.state.user && store.state.user.DEPOT || '')}`;
 
 const getStock = url => {
     return new Promise((resolve) => {
