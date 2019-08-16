@@ -69,6 +69,8 @@
             flat
             :icon="$q.fullscreen.isActive ? 'fullscreen_exit' : 'fullscreen'"
             @click="$q.fullscreen.toggle()"
+            v-shortkey="['ctrl', 'alt', 'enter']"
+            @shortkey="toggleFullScreen()"
             style="margin: 3px 20px 0 0;"
             size="0.9em"
           />
@@ -213,6 +215,7 @@
 </template>
 <script>
 import { eventHub } from "./eventhub";
+import { AppFullscreen } from 'quasar'
 const { remote } = require("electron");
 const win = remote.getCurrentWindow();
 
@@ -287,6 +290,10 @@ export default {
   },
 
   methods: {
+    toggleFullScreen() {
+      AppFullscreen.toggle();
+    },
+
     updateComponentUnavailable(name) {
       if (this.isOnline || this.offlineComponents.includes(name)) {
         this.unavailable = false;

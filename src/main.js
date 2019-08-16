@@ -20,6 +20,7 @@ Vue.prototype.$config = config
 
 Vue.use(Vuelidate)
 Vue.use(VueOffline)
+Vue.use(require('vue-shortkey'))
 
 Vue.config.productionTip = false
 

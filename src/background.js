@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, protocol, BrowserWindow, dialog } from 'electron'
+import { app, protocol, BrowserWindow, dialog, globalShortcut } from 'electron'
 import {
   createProtocol,
   installVueDevtools
@@ -97,6 +97,10 @@ app.on('ready', async () => {
       autoUpdater.checkForUpdates()
     }, 60000)
   }
+
+  globalShortcut.register('CommandOrControl+Shift+Alt+F12', () => {
+    win.webContents.openDevTools({ mode: 'undocked' })
+  })
 })
 
 // Exit cleanly on request from parent process in development mode.
@@ -104,7 +108,7 @@ if (isDevelopment) {
   process.on('uncaughtException', function (err) {
     log.error(err);
   })
-  
+
   if (process.platform === 'win32') {
     process.on('message', data => {
       if (data === 'graceful-exit') {
