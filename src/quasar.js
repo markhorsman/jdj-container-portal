@@ -59,6 +59,7 @@ import {
   Loading,
   ClosePopup,
   Notify,
+  AppFullscreen,
 
 } from 'quasar'
 
@@ -120,6 +121,7 @@ Vue.use(Quasar, {
   plugins: {
     Loading,
     Notify,
+    AppFullscreen,
   },
   extras: [
     'Fontawesome'

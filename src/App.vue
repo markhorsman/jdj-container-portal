@@ -64,6 +64,14 @@
           <q-icon name="build" />
           <div>Container Tools</div>
           <q-space />
+          <q-btn
+            dense
+            flat
+            :icon="$q.fullscreen.isActive ? 'fullscreen_exit' : 'fullscreen'"
+            @click="$q.fullscreen.toggle()"
+            style="margin: 3px 20px 0 0;"
+            size="0.9em"
+          />
           <q-btn dense flat icon="minimize" @click="minimize" />
           <q-btn dense flat icon="crop_square" @click="maximize" />
           <q-btn dense flat icon="close" @click="confirmClose = true" />
@@ -160,7 +168,7 @@
                 <q-item-label caption>Tellijsten genereren</q-item-label>
               </q-item-section>
             </q-item>
-            <q-item clickable tag="a" to="/customercontact"  v-if="isOnline">
+            <q-item clickable tag="a" to="/customercontact" v-if="isOnline">
               <q-item-section avatar>
                 <q-icon name="fas fa-id-badge" />
               </q-item-section>
@@ -220,12 +228,7 @@ export default {
       confirmClose: false,
       maxHeight: win.getContentSize()[1],
       version,
-      offlineComponents: [
-        "Home",
-        "Rental",
-        "ContractItems",
-        "Login"
-      ],
+      offlineComponents: ["Home", "Rental", "ContractItems", "Login"],
       unavailable: false
     };
   },
@@ -274,10 +277,12 @@ export default {
       return this.isOnline ? "Online" : "Offline";
     },
 
-    userInAPIGroup(){
-      return this.$store.state.user && 
-      this.$store.state.user.GRPCODE && 
-      this.$store.state.user.GRPCODE === 'API'
+    userInAPIGroup() {
+      return (
+        this.$store.state.user &&
+        this.$store.state.user.GRPCODE &&
+        this.$store.state.user.GRPCODE === "API"
+      );
     }
   },
 
