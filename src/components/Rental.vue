@@ -212,15 +212,15 @@ export default {
           sortable: true,
           type: "return"
         },
-        {
-          name: "STKLEVEL",
-          required: true,
-          label: "Voorraad",
-          align: "left",
-          field: row => row.STKLEVEL,
-          format: val => `${val}`,
-          sortable: true
-        }
+        // {
+        //   name: "STKLEVEL",
+        //   required: true,
+        //   label: "Voorraad",
+        //   align: "left",
+        //   field: row => row.STKLEVEL,
+        //   format: val => `${val}`,
+        //   sortable: true
+        // }
       ]
     };
   },

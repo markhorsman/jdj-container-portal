@@ -85,7 +85,13 @@ export default new Vue({
       try {
         result = await this.$api
           .get(
-            `https://spreadsheets.google.com/feeds/cells/${this.$config.spreadsheet_id}/1/public/full?alt=json`
+            `https://spreadsheets.google.com/feeds/cells/${this.$config.spreadsheet_id}/1/public/full?alt=json`,
+            {
+              headers: {
+                skipLoader: true,
+                skipCache: true
+              }
+            }
           );
       } catch (e) {
         log.error(e);
@@ -188,12 +194,12 @@ export default new Vue({
 
     async getStockItems(top = 100, skip = 0) {
       if (
-        this.isOffline || 
+        this.isOffline ||
         !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT
       ) {
-          return Promise.resolve([]);
+        return Promise.resolve([]);
       }
 
       let res;
@@ -231,12 +237,12 @@ export default new Vue({
 
     async getStockTotal() {
       if (
-        this.isOffline || 
+        this.isOffline ||
         !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT
       ) {
-          return Promise.resolve(0);
+        return Promise.resolve(0);
       }
 
       let res;
@@ -302,12 +308,12 @@ export default new Vue({
 
     async getContItems(top = 100, skip = 0) {
       if (
-        this.isOffline || 
+        this.isOffline ||
         !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT
       ) {
-          return Promise.resolve([]);
+        return Promise.resolve([]);
       }
 
       let res;
@@ -339,12 +345,12 @@ export default new Vue({
 
     async getContItemsTotal() {
       if (
-        this.isOffline || 
+        this.isOffline ||
         !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT
       ) {
-          return Promise.resolve(0);
+        return Promise.resolve(0);
       }
 
       let res;
