@@ -377,6 +377,10 @@ export default {
             ITEMNO: item.ITEMNO,
             CONTITEM_RECORDER: item.RECORDER,
             QTY: item.QTY,
+            QTYOK: item.QTYOK,
+            QTYDAM: item.QTYDAM,
+            QTYLOST: item.QTYLOST,
+            UNIQUE: item.UNIQUE,
             USERNAME: this.$store.state.user.USERNAME,
             MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
           },
