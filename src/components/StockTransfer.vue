@@ -60,6 +60,8 @@
 </template>
 
 <script>
+const ioHook = require("iohook");
+
 export default {
   name: "StockTransfer",
 
@@ -75,18 +77,31 @@ export default {
   },
 
   mounted() {
-    document.addEventListener("keypress", this.getInput);
+    ioHook.on("keyup", this.getInput);
+    ioHook.start();
+    // document.addEventListener("keypress", this.getInput);
   },
 
   methods: {
     getInput(e) {
-      e.stopImmediatePropagation();
-      if (e.keyCode === 13 && this.code.length >= 5) {
-        this.itemnumber = this.code;
+      // e.stopImmediatePropagation();
+      // if (e.keyCode === 13 && this.code.length >= 5) {
+      //   this.itemnumber = this.code;
+      //   this.getProduct();
+      //   this.code = "";
+      // } else {
+      //   this.code += e.key;
+      // }
+
+      if (e.keycode === 28 && this.code.length >= 5) {
+        this.itemnumber = this.code.replace(/\s/g, "");
         this.getProduct();
         this.code = "";
       } else {
-        this.code += e.key;
+        const char = String.fromCharCode(e.rawcode);
+        if (typeof char !== "undefined" && char.length) {
+          this.code += char;
+        }
       }
 
       //run a timeout of 200ms at the first read and clear everything
@@ -204,7 +219,9 @@ export default {
   },
 
   destroyed() {
-    document.removeEventListener("keypress", this.getInput);
+    ioHook.stop();
+    ioHook.removeListener("keyup", this.getInput);
+    // document.removeEventListener("keypress", this.getInput);
   }
 };
 </script>

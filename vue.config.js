@@ -28,7 +28,8 @@ module.exports = {
         }
       },
       externals: [
-        'nfc-pcsc'
+        'nfc-pcsc',
+        'iohook'
       ],
       nodeModulesPath: [
         '../../node_modules',

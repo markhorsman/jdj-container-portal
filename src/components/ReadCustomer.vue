@@ -14,6 +14,7 @@
 
 <script>
 import { NFC } from "nfc-pcsc";
+import log from 'electron-log'
 
 export default {
   name: "ReadCustomer",
@@ -60,7 +61,9 @@ export default {
       });
     });
 
-    this.nfc.on("error", err => {});
+    this.nfc.on("error", err => {
+      log.error(err);
+    });
   },
   methods: {
     notifyNotFound: function() {

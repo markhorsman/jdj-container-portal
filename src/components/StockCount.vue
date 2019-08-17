@@ -193,6 +193,7 @@ import { findIndex, clone } from "lodash";
 import { eventHub } from "../eventhub";
 import { emailStockCount } from "../mailer";
 import printJS from "print-js";
+const ioHook = require("iohook");
 
 export default {
   data() {
@@ -303,7 +304,10 @@ export default {
 
   mounted() {
     this.$store.commit("saveStockCount", []);
-    document.addEventListener("keypress", this.getInput);
+
+    ioHook.on("keyup", this.getInput);
+    ioHook.start();
+    // document.addEventListener("keypress", this.getInput);
 
     this.getSubGroups();
 
@@ -406,12 +410,21 @@ export default {
     },
 
     getInput: function(e) {
-      e.stopImmediatePropagation();
-      if (e.keyCode === 13 && this.code.length >= 5) {
-        this.updateSelected(this.code);
+      // e.stopImmediatePropagation();
+      // if (e.keyCode === 13 && this.code.length >= 5) {
+      //   this.updateSelected(this.code);
+      //   this.code = "";
+      // } else {
+      //   this.code += e.key;
+      // }
+      if (e.keycode === 28 && this.code.length >= 5) {
+        this.updateSelected(this.code.replace(/\s/g, ""));
         this.code = "";
       } else {
-        this.code += e.key;
+        const char = String.fromCharCode(e.rawcode);
+        if (typeof char !== "undefined" && char.length) {
+          this.code += char;
+        }
       }
 
       //run a timeout of 200ms at the first read and clear everything
@@ -572,7 +585,7 @@ export default {
       eventHub.$emit("before-request");
 
       return emailStockCount(list, this.emailaddress, subject, intro)
-        .then(info => {
+        .then(() => {
           this.$q.notify({
             color: "green-4",
             icon: "fas fa-exclamation-triangle",
@@ -593,7 +606,9 @@ export default {
   },
 
   destroyed() {
-    document.removeEventListener("keypress", this.getInput);
+    ioHook.stop();
+    ioHook.removeListener("keyup", this.getInput);
+    // document.removeEventListener("keypress", this.getInput);
   }
 };
 </script>

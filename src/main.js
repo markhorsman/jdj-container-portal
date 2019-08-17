@@ -25,7 +25,7 @@ Vue.use(require('vue-shortkey'))
 Vue.config.productionTip = false
 
 Notify.setDefaults({
-  timeout: 0,
+  timeout: 15000,
   textColor: 'white',
   actions: [{ icon: 'close', color: 'white' }]
 })
