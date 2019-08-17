@@ -178,7 +178,7 @@
             />
           </q-td>
 
-          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
+          <!-- <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td> -->
           <q-td key="DELETE" :props="props">
             <q-icon
               name="delete"
@@ -267,15 +267,15 @@ export default {
           sortable: true,
           type: "rentalReturn"
         },
-        {
-          name: "STKLEVEL",
-          required: true,
-          label: "Voorraad",
-          align: "left",
-          field: row => row.STKLEVEL,
-          format: val => `${val}`,
-          sortable: true
-        },
+        // {
+        //   name: "STKLEVEL",
+        //   required: true,
+        //   label: "Voorraad",
+        //   align: "left",
+        //   field: row => row.STKLEVEL,
+        //   format: val => `${val}`,
+        //   sortable: true
+        // },
         {
           name: "DELETE",
           required: true,

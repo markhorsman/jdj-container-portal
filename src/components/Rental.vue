@@ -121,13 +121,8 @@ import moment from "moment";
 import ReadCustomer from "./ReadCustomer.vue";
 import ReadProduct from "./ReadProduct.vue";
 import ContractItems from "./ContractItems.vue";
-import { request } from "http";
 
-const CONTITEM_IN_RENT_STATUS = 1;
-const CONTITEM_FROM_RENT_STATUS = 2;
-const STOCK_IN_RENT_STATUS = 1;
-const STOCK_AVAILABLE_STATUS = 0;
-const STOCK_IN_REPAIR_STATUS = 2;
+import { eventHub } from "../eventhub";
 
 export default {
   name: "Rental",
@@ -293,7 +288,12 @@ export default {
       try {
         result = await this.$api.post(
           `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`,
-          item
+          item,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         );
       } catch (e) {
         result = e;
@@ -307,7 +307,13 @@ export default {
         result = await this.$api.post(
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
-          )}/deliver?api_key=${this.$store.state.api_key}`
+          )}/deliver?api_key=${this.$store.state.api_key}`,
+          {},
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         );
       } catch (e) {
         result = e;
@@ -339,7 +345,12 @@ export default {
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
           )}/offhire?api_key=${this.$store.state.api_key}`,
-          body
+          body,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         );
       } catch (e) {
         result = e;
@@ -369,7 +380,10 @@ export default {
             MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
           },
           {
-            auth: this.$config.container_api_basic_auth
+            auth: this.$config.container_api_basic_auth,
+            headers: {
+              skipLoader: true
+            }
           }
         );
       } catch (e) {
@@ -382,7 +396,12 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         );
       } catch (e) {
         result = null;
@@ -394,7 +413,13 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,MEMO`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,MEMO`,
+          {},
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         );
       } catch (e) {
         result = null;
@@ -466,10 +491,13 @@ export default {
       const confirmed = [];
       let failed = 0;
 
+      eventHub.$emit("before-request");
+
       const response = await this.getContractItems();
       const items = response.data;
 
       if (!items || !items.length) {
+        eventHub.$emit("after-response");
         this.notify(
           `Artikelen van contract (${this.$config.default_contract_number}) niet gevonden`
         );
@@ -496,15 +524,16 @@ export default {
       });
 
       if (!products.length) {
+        eventHub.$emit("after-response");
         this.notify(
           `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`
         );
         return;
       }
 
-      const offhireContItemRequests = products.map(async p => {
-        return await this.offhireContractItem(p.RECID, p);
-      });
+      const offhireContItemRequests = products.map(
+        async p => await this.offhireContractItem(p.RECID, p)
+      );
 
       const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
@@ -532,16 +561,15 @@ export default {
 
       // all failed
       if (failed && failed === products.length) {
+        eventHub.$emit("after-response");
         return;
       }
 
       failed = 0;
-      const offhireConfirmRequests = processed.map(async p => {
-        return await this.offhireConfirmItem(
-          this.$config.default_contract_number,
-          p
-        );
-      });
+      const offhireConfirmRequests = processed.map(
+        async p =>
+          await this.offhireConfirmItem(this.$config.default_contract_number, p)
+      );
 
       // TODO: max x concurrent (throat)
       const offhireConfirmResults = await Promise.all(offhireConfirmRequests);
@@ -591,6 +619,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      eventHub.$emit("after-response");
 
       this.step = 1;
       this.$router.push("/rental");
@@ -616,20 +645,29 @@ export default {
       const delivered = [];
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
 
+      eventHub.$emit("before-request");
+
       const res = await this.getContract();
       const contract = res.data;
       if (!contract) {
+        eventHub.$emit("after-response");
+
         this.notify(
           `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`
         );
+
         return;
       }
 
       const m = moment(contract.ESTRETD);
       if (!m || !m.isValid()) {
+        eventHub.$emit("after-response");
+
         this.notify(
           `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`
         );
+
+        return;
       }
 
       const estretd = m.format("YYYY-MM-DD HH:mm:ss");
@@ -670,12 +708,13 @@ export default {
       });
 
       if (failed && failed === contItemResults.length) {
+        eventHub.$emit("after-response");
         return;
       }
 
-      const deliverContItemRequests = products.map(async recid => {
-        return await this.deliverContractItem(recid);
-      });
+      const deliverContItemRequests = products.map(
+        async recid => await this.deliverContractItem(recid)
+      );
 
       const contItemDeliverResults = await Promise.all(deliverContItemRequests);
 
@@ -707,6 +746,7 @@ export default {
           this.removeLocalProductByItemNumber(s.ITEMNO);
         });
 
+        eventHub.$emit("after-response");
         return;
       }
 
@@ -717,6 +757,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      eventHub.$emit("after-response");
 
       const total = contItemDeliverResults.length - deliverFailed;
       this.notify(
