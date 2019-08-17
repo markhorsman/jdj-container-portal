@@ -196,6 +196,7 @@
 import storage from "electron-json-storage";
 import os from "os";
 import { eventHub } from "../eventhub";
+import log from 'electron-log'
 
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
 
@@ -412,7 +413,7 @@ export default {
             const found = res.data[0];
 
             // send signal
-            if (!found.UNIQUE && isOffhire) {
+            if (found && !found.UNIQUE && this.isOffhire) {
               eventHub.$emit("offhire-check-contitem", found);
               return;
             }
@@ -422,7 +423,8 @@ export default {
             this.notifyNotFound();
           }
         })
-        .catch(() => {
+        .catch((e) => {
+          log.error(e);
           this.notifyNotFound();
         });
     }

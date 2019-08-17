@@ -79,6 +79,12 @@ export default {
         .then(res => {
           if (res && res.data && res.data.data && res.data.data.length) {
             this.$store.commit("updateCustomer", res.data.data[0]);
+
+            if (this.customer && this.customer.REFERENCE !== res.data.data[0].REFERENCE) {
+              // clear products
+              this.$store.commit("updateRentalProducts", []);
+            }
+
             this.customer = res.data.data[0];
           } else {
             this.notifyNotFound();

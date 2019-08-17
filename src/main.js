@@ -36,9 +36,7 @@ const throat = require('throat')(Promise);
 export default new Vue({
   el: '#app',
   data: {
-    refreshing: false,
     caching: false,
-    interval: null,
     cacheInterval: null,
     refresh: 5 * 60 * 1000, // 5 minutes
     cacheTime: 5 * 60 * 1000,
@@ -58,24 +56,6 @@ export default new Vue({
     }
   },
   methods: {
-    async refreshSession() {
-      if (!this.$store.state.api_key || this.refreshing) return;
-      this.refreshing = true;
-
-      let result;
-      try {
-        result = await this.$api
-        .get(
-          `${this.$config.api_base_url}users/?api_key=${this.$store.state.api_key}&top=1`, {
-            headers: {
-              skipLoader: true
-            }
-          }
-        );
-      } catch (e) {
-        console.log(e);
-      }
-    },
 
     async setStorage(key, val) {
       return await new Promise((resolve, reject) => {
@@ -402,19 +382,13 @@ export default new Vue({
       this.$store.commit("updateNetworkStatus", false);
     });
 
-    await this.refreshSession();
     await this.buildCache();
-
-    this.interval = setInterval(async function () {
-      await this.refreshSession();
-    }.bind(this), this.refresh);
 
     this.cacheInterval = setInterval(async function () {
       await this.buildCache();
     }.bind(this), this.cacheTime);
   },
   destroyed() {
-    if (this.interval) clearInterval(this.interval);
     if (this.cacheInterval) clearInterval(this.cacheInterval);
   },
   render: h => h(App),
