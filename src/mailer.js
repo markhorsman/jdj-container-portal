@@ -6,15 +6,15 @@ const emailStockCount = (products, email, subject, intro) => {
     let body = `
     <p>Beste heer/mevrouw,</p>
     <p>${intro}</p>
-    <table>
+    <table width="100%">
     <thead>
         <tr>
-            <th>Artikelnummer</th>
-            <th>Productgroep</th>
-            <th>Subgroep</th>
-            <th>Omschrijving</th>
-            <th>Voorraad</th>
-            <th>Telling</th>
+            <th style="text-align: left;">Artikelnummer</th>
+            <th style="text-align: left;">Productgroep</th>
+            <th style="text-align: left;">Subgroep</th>
+            <th style="text-align: left;">Omschrijving</th>
+            <th style="text-align: left;">Voorraad</th>
+            <th style="text-align: left;">Telling</th>
         </tr>
     </thead>
     <tbody>
@@ -57,12 +57,14 @@ const emailContractItems = (products, email, subject) => {
     let body = `
     <p>Beste heer/mevrouw,</p>
     <p>Onderstaand vindt u een lijst met alle artikelen die momenteel op uw naam staan:</p>
-    <table>
+    <table width="100%">
     <thead>
         <tr>
-            <th>Artikelnummer</th>
-            <th>Omschrijving</th>
-            <th>Aantal</th>
+            <th style="text-align: left;">Contractnummer</th>
+            <th style="text-align: left;">Artikelnummer</th>
+            <th style="text-align: left;">Omschrijving</th>
+            <th style="text-align: left;">Memo</th>
+            <th style="text-align: left;">Aantal</th>
         </tr>
     </thead>
     <tbody>
@@ -70,8 +72,10 @@ const emailContractItems = (products, email, subject) => {
 
     products.forEach(p => body += `
     <tr>
+        <td>${p.CONTNO}</td>
         <td>${p.ITEMNO}</td>
         <td>${p.ITEMDESC}</td>
+        <td>${p.MEMO}</td>
         <td>${p.QTY}</td>
     </tr>`);
 

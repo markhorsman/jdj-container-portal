@@ -384,7 +384,7 @@ export default {
     getSubGroups: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
         )
         .then(res => {
           this.subgroups = res.data.reduce((acc, grp) => {

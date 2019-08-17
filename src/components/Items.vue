@@ -293,8 +293,10 @@ export default {
 
     print() {
       const properties = [
+        { field: "CONTNO", displayName: "Contractnummer" },
         { field: "ITEMNO", displayName: "Artikelnummer" },
-        { field: "ITEMDESC", displayName: "Omschrijving" },
+        { field: "ITEMDESC", displayName: "Omschrijving 1" },
+        { field: "MEMO", displayName: "Memo" },
         { field: "QTY", displayName: "Aantal" }
       ];
 

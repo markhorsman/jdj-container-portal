@@ -211,7 +211,7 @@ export default {
           format: val => `${val}`,
           sortable: true,
           type: "return"
-        },
+        }
         // {
         //   name: "STKLEVEL",
         //   required: true,
@@ -375,6 +375,7 @@ export default {
           {
             CONTNO: contno,
             ITEMNO: item.ITEMNO,
+            CONTITEM_RECORDER: item.RECORDER,
             QTY: item.QTY,
             USERNAME: this.$store.state.user.USERNAME,
             MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
@@ -413,7 +414,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,MEMO`,
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO`,
           {},
           {
             headers: {
@@ -519,7 +520,9 @@ export default {
         }
 
         if (match) {
-          products.push(Object.assign(p, { RECID: match.RECID }));
+          products.push(
+            Object.assign(p, { RECID: match.RECID, RECORDER: match.RECORDER })
+          );
         }
       });
 

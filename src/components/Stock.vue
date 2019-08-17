@@ -262,21 +262,16 @@ export default {
           `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`
         ),
         this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&$filter=DEPOT eq '${this.$store.state.user.DEPOT}'&fields=CODE,NAME,PGROUP`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP`
         )
       ])
         .then(res => {
-          const all = res[0].data;
           this.groups.main = sortBy(
-            res[1].data.reduce((acc, grp) => {
-              if (!acc.find(p => p.value === grp.PGROUP)) {
-                const group = all.find(p => p.CODE === grp.PGROUP);
-                if (group)
-                  acc.push({
-                    label: `${grp.CODE} - ${grp.NAME}`,
-                    value: group.CODE
-                  });
-              }
+            res[0].data.reduce((acc, grp) => {
+              acc.push({
+                label: `${grp.CODE} - ${grp.NAME}`,
+                value: grp.CODE
+              });
               return acc;
             }, []),
             "label"
