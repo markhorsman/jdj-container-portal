@@ -24,7 +24,7 @@ module.exports = {
             "owner": "markhorsman",
             "repo": "jdj-container-portal"
           },
-          "icon": "./build/icons/png/256x256.png"
+          "icon": "./build/icons/icon.ico"
         }
       },
       externals: [
