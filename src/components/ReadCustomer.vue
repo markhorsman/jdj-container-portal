@@ -62,7 +62,7 @@ export default {
     });
 
     this.nfc.on("error", err => {
-      log.error(err);
+      // log.error(err);
     });
   },
   methods: {

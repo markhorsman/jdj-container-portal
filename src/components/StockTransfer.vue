@@ -79,27 +79,17 @@ export default {
   mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
-    // document.addEventListener("keypress", this.getInput);
   },
 
   methods: {
     getInput(e) {
-      // e.stopImmediatePropagation();
-      // if (e.keyCode === 13 && this.code.length >= 5) {
-      //   this.itemnumber = this.code;
-      //   this.getProduct();
-      //   this.code = "";
-      // } else {
-      //   this.code += e.key;
-      // }
-
       if (e.keycode === 28 && this.code.length >= 5) {
         this.itemnumber = this.code.replace(/\s/g, "");
         this.getProduct();
         this.code = "";
       } else {
-        const char = String.fromCharCode(e.rawcode);
-        if (typeof char !== "undefined" && char.length) {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
+        if (typeof char !== "undefined" && char.length && char !== ' ') {
           this.code += char;
         }
       }
@@ -221,7 +211,6 @@ export default {
   destroyed() {
     ioHook.stop();
     ioHook.removeListener("keyup", this.getInput);
-    // document.removeEventListener("keypress", this.getInput);
   }
 };
 </script>

@@ -204,7 +204,6 @@ export default {
   mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
-    // document.addEventListener("keypress", this.getInput);
 
     this.getGroups();
 
@@ -308,8 +307,8 @@ export default {
           filter: this.filter
         });
       } else {
-        const char = String.fromCharCode(e.rawcode);
-        if (typeof char !== "undefined" && char.length) {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
+        if (typeof char !== "undefined" && char.length && char !== ' ') {
           this.code += char;
         }
       }
@@ -322,28 +321,6 @@ export default {
           this.reading = false;
         }, 200);
       }
-
-      // e.stopImmediatePropagation();
-      // if (e.keyCode === 13 && this.code.length >= 5) {
-      //   this.filter = this.code;
-      //   this.code = "";
-
-      //   this.onRequest({
-      //     pagination: this.pagination,
-      //     filter: this.filter
-      //   });
-      // } else {
-      //   this.code += e.key;
-      // }
-
-      // //run a timeout of 200ms at the first read and clear everything
-      // if (!this.reading) {
-      //   this.reading = true;
-      //   setTimeout(() => {
-      //     this.code = "";
-      //     this.reading = false;
-      //   }, 200);
-      // }
     },
 
     filterGroups(val, update, abort) {
@@ -382,7 +359,6 @@ export default {
   destroyed() {
     ioHook.stop();
     ioHook.removeListener("keyup", this.getInput);
-    // document.removeEventListener("keypress", this.getInput);
   }
 };
 </script>
