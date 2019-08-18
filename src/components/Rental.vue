@@ -226,7 +226,7 @@ export default {
   },
 
   methods: {
-    notify(message, type = "error", timeout = 0, html = false) {
+    notify(message, type = "error", timeout = 15000, html = false) {
       this.$q.notify({
         color: type === "error" ? "red-5" : "green-4",
         icon:
@@ -464,7 +464,6 @@ export default {
           type === "hire" ? "verhuur" : "uithuur"
         } verzoek bevestigen zodra je weer online bent.<br />
         Alle niet verzonden taken vindt je terug in de verhuur module (alleen zichtbaar wanneer je online bent).</p>`,
-        timeout: 15000,
         html: true
       });
 
@@ -606,16 +605,14 @@ export default {
           } contract item${
             processed.length > 1 ? "s" : ""
           } uit huur gehaald. Maar niet allemaal bevestigd.`,
-          "success",
-          5000
+          "success"
         );
       } else {
         this.notify(
           `Er ${processed.length > 1 ? "zijn" : "is"} ${
             processed.length
           } contract item${processed.length > 1 ? "s" : ""} uit huur gehaald.`,
-          "success",
-          5000
+          "success"
         );
       }
 
@@ -771,8 +768,7 @@ export default {
         `Er ${total > 1 ? "zijn" : "is"} ${total} contract item${
           total > 1 ? "s" : ""
         } in huur gezet.`,
-        "success",
-        5000
+        "success"
       );
 
       this.step = 1;
