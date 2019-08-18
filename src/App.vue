@@ -94,7 +94,7 @@
             <img
               alt="J de Jonge"
               width="200"
-              src="logo.png"
+              src="../public/logo.png"
             />
           </q-toolbar-title>
           <div>
