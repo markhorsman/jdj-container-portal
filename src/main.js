@@ -44,7 +44,7 @@ export default new Vue({
       stock: {
         top: 100,
         concurrency: 3,
-        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT'],
+        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT', 'UNIQUE'],
         total: 0
       },
       contitems: {
