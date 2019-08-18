@@ -13,7 +13,7 @@
         group="faq"
       >
         <q-card>
-          <q-card-section v-html="entry.answer"/>
+          <q-card-section v-html="entry.answer" />
         </q-card>
       </q-expansion-item>
     </q-list>
@@ -22,7 +22,7 @@
       <h3>JDJ Container Portal FAQ</h3>
       <div v-for="(entry, index) in feedEntries" v-bind:key="index">
         <h5>{{ entry.question }}</h5>
-        <p>{{ entry.answer }}</p>
+        <p v-html="entry.answer"></p>
       </div>
     </div>
   </div>
@@ -58,10 +58,7 @@ export default {
                 answer: ""
               };
             } else {
-              acc[entry.gs$cell.row].answer = `<p>${entry.content.$t
-                .replace(/\n([ \t]*\n)+/g, "</p><p>")
-                .replace("\n", "<br />")}
-                 </p>`;
+              acc[entry.gs$cell.row].answer = entry.content.$t.split("\n").join("<br />");
             }
             return acc;
           }, {});
