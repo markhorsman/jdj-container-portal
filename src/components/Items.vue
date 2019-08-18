@@ -68,7 +68,7 @@
         />
       </template>
       <template v-slot:top-right>
-        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoek op naam">
+        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken">
           <template v-slot:append>
             <q-icon name="search" />
           </template>
@@ -83,6 +83,7 @@ import { NFC } from "nfc-pcsc";
 import { eventHub } from "../eventhub";
 import { emailContractItems } from "../mailer";
 import printJS from "print-js";
+const ioHook = require("iohook");
 
 export default {
   name: "Items",
@@ -173,6 +174,9 @@ export default {
   },
 
   mounted() {
+    ioHook.on("keyup", this.getInput);
+    ioHook.start();
+
     this.nfc = new NFC();
     this.readers = new Set();
 
@@ -225,6 +229,32 @@ export default {
       });
     },
 
+    getInput: function(e) {
+      if (e.keycode === 28 && this.code.length >= 5) {
+        this.filter = this.code.replace(/\s/g, "");
+        this.code = "";
+
+        this.onRequest({
+          pagination: this.pagination,
+          filter: this.filter
+        });
+      } else {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
+        if (typeof char !== "undefined" && char.length && char !== " ") {
+          this.code += char;
+        }
+      }
+
+      //run a timeout of 200ms at the first read and clear everything
+      if (!this.reading) {
+        this.reading = true;
+        setTimeout(() => {
+          this.code = "";
+          this.reading = false;
+        }, 200);
+      }
+    },
+
     getCustomer: function() {
       this.loading = true;
       this.$api
@@ -264,7 +294,7 @@ export default {
       const buildFilter = () =>
         `STATUS eq 1${
           filter
-            ? ` and (startswith(ITEMNO, '${filter}') or startswith(ITEMDESC, '${filter}') or startswith(ITEMDESC2, '${filter}') or startswith(ITEMDESC3, '${filter}') or indexof(MEMO, '${filter}') gt -1)`
+            ? ` and (startswith(ITEMNO, '${filter}') or indexof(ITEMDESC, '${filter}') gt -1 or indexof(ITEMDESC2, '${filter}') gt -1 or indexof(ITEMDESC3, '${filter}') gt -1 or indexof(MEMO, '${filter}') gt -1)`
             : ``
         }`;
 
@@ -346,6 +376,9 @@ export default {
       // stops listening for reader status changes, reader emits 'end' event
       reader.close();
     });
+
+    ioHook.stop();
+    ioHook.removeListener("keyup", this.getInput);
   }
 };
 </script>

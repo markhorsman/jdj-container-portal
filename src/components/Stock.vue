@@ -82,7 +82,7 @@
           dense
           debounce="500"
           v-model="filter"
-          placeholder="Zoek op artikelnummer"
+          placeholder="Zoeken"
         >
           <template v-slot:append>
             <q-icon name="search" />
@@ -230,7 +230,7 @@ export default {
 
       const buildFilter = () =>
         `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${
-          filter ? ` and startswith(ITEMNO, '${filter}')` : ``
+          filter ? ` and (startswith(ITEMNO, '${filter}') or indexof(DESC1, '${filter}') gt -1 or indexof(DESC2, '${filter}') gt -1 or indexof(DESC3, '${filter}') gt -1)` : ``
         }${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}${
           this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``
         }${this.statusInRent ? ` and STATUS eq 1` : ``}${

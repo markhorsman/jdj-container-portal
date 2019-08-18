@@ -13,7 +13,7 @@
         group="faq"
       >
         <q-card>
-          <q-card-section>{{ entry.answer }}</q-card-section>
+          <q-card-section v-html="entry.answer"/>
         </q-card>
       </q-expansion-item>
     </q-list>
@@ -58,7 +58,10 @@ export default {
                 answer: ""
               };
             } else {
-              acc[entry.gs$cell.row].answer = entry.content.$t;
+              acc[entry.gs$cell.row].answer = `<p>${entry.content.$t
+                .replace(/\n([ \t]*\n)+/g, "</p><p>")
+                .replace("\n", "<br />")}
+                 </p>`;
             }
             return acc;
           }, {});
