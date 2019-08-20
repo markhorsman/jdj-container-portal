@@ -92,9 +92,9 @@
 
           <q-toolbar-title class="pull-right">
             <img
-              alt="Vue logo"
+              alt="J de Jonge"
               width="200"
-              src="https://jdejonge.nl/wp-content/uploads/2019/03/JdeJonge_Pay-off_RGB_Zwart_72.png"
+              src="../public/logo.png"
             />
           </q-toolbar-title>
           <div>
