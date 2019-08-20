@@ -1,5 +1,52 @@
 <template>
   <div class="q-px-lg q-pb-md">
+    <q-dialog v-model="genList" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="fas fa-scroll" color="primary" text-color="white" />
+          <span class="q-ml-sm">Wil je de artikelen mailen of printen?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
+          <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="chooseEmail" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="email" color="primary" text-color="white" />
+          <span class="q-ml-sm">Naar wie mag de e-mail verstuurd worden?</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-input
+            v-model="emailaddress"
+            filled
+            type="email"
+            placeholder="E-mailadres"
+            class="full-width"
+            error-message="Ongeldig E-mailadres"
+            :error="!isValidEmail"
+            :rules="[val => !!val || 'E-mailadres is verplicht']"
+          />
+          <br />
+          <q-btn
+            flat
+            label="Versturen"
+            color="primary"
+            icon="email"
+            @click="email"
+            :disabled="!emailaddress.length || !isValidEmail"
+          />
+          <q-btn flat label="Sluiten" color="danger" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <br />
     <q-select
       outlined
@@ -72,18 +119,19 @@
       @request="onRequest"
     >
       <template v-slot:top-left>
+        <q-btn
+          dense
+          color="primary"
+          :disabled="!tableData.length"
+          label="Printen/mailen"
+          @click="genList = true;"
+        />
         <q-toggle v-model="statusInRent" label="In huur" @input="statusFilter('rent')" />
         <q-toggle v-model="statusInRepair" label="In Reparatie" @input="statusFilter('repair')" />
       </template>
 
       <template v-slot:top-right>
-        <q-input
-          borderless
-          dense
-          debounce="500"
-          v-model="filter"
-          placeholder="Zoeken"
-        >
+        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken">
           <template v-slot:append>
             <q-icon name="search" />
           </template>
@@ -96,6 +144,8 @@
 <script>
 import { sortBy } from "lodash";
 const ioHook = require("iohook");
+import { eventHub } from "../eventhub";
+import { emailStock } from "../mailer";
 
 export default {
   name: "Stock",
@@ -197,7 +247,10 @@ export default {
       statusInRent: false,
       statusInRepair: false,
       code: "",
-      reading: false
+      reading: false,
+      genList: false,
+      chooseEmail: false,
+      emailaddress: this.$config.email.default_email
     };
   },
 
@@ -211,6 +264,13 @@ export default {
       pagination: this.pagination,
       filter: undefined
     });
+  },
+
+  computed: {
+    isValidEmail() {
+      var re = /\S+@\S+\.\S+/;
+      return re.test(this.emailaddress);
+    }
   },
 
   methods: {
@@ -230,7 +290,9 @@ export default {
 
       const buildFilter = () =>
         `CURRDEPOT eq '${this.$store.state.user.DEPOT}'${
-          filter ? ` and (startswith(ITEMNO, '${filter}') or indexof(DESC1, '${filter}') gt -1 or indexof(DESC2, '${filter}') gt -1 or indexof(DESC3, '${filter}') gt -1)` : ``
+          filter
+            ? ` and (startswith(ITEMNO, '${filter}') or indexof(DESC1, '${filter}') gt -1 or indexof(DESC2, '${filter}') gt -1 or indexof(DESC3, '${filter}') gt -1)`
+            : ``
         }${this.group ? ` and PGROUP eq '${this.group.value}'` : ``}${
           this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``
         }${this.statusInRent ? ` and STATUS eq 1` : ``}${
@@ -307,8 +369,8 @@ export default {
           filter: this.filter
         });
       } else {
-        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
-        if (typeof char !== "undefined" && char.length && char !== ' ') {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
+        if (typeof char !== "undefined" && char.length && char !== " ") {
           this.code += char;
         }
       }
@@ -353,6 +415,50 @@ export default {
         pagination: this.pagination,
         filter: this.filter
       });
+    },
+
+    print() {
+      const properties = [
+        { field: "ITEMNO", displayName: "Artikelnummer" },
+        { field: "DESC1", displayName: "Omschrijving 1" },
+        { field: "STKLEVEL", displayName: "Aantal" }
+      ];
+
+      printJS({
+        printable: this.tableData,
+        type: "json",
+        properties,
+        documentTitle: "Voorraad lijst"
+      });
+    },
+
+    email() {
+      const list = this.tableData;
+      this.chooseEmail = false;
+      eventHub.$emit("before-request");
+
+      return emailStock(
+        list,
+        this.emailaddress,
+        "Voorraad lijst"
+      )
+        .then(info => {
+          this.$q.notify({
+            color: "green-4",
+            icon: "fas fa-exclamation-triangle",
+            message: `De lijst met ${list.length} artikelen is verzonden.`
+          });
+        })
+        .catch(e => {
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Email versturen mislukt.`
+          });
+        })
+        .finally(() => {
+          eventHub.$emit("after-response");
+        });
     }
   },
 
