@@ -361,7 +361,7 @@ export default {
 
     getInput: function(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
-        this.filter = this.code.replace(/\s/g, "");
+        this.filter = this.code.replace(/\s/g, "").toUpperCase();
         this.code = "";
 
         this.onRequest({

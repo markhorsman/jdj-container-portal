@@ -1,73 +1,154 @@
 <template>
-  <div class="q-px-lg q-pb-md">
-    <br />
-    <div class="row q-col-gutter-sm">
-      <div class="col-xs-12 col-md-8">
-        <q-card style="min-height: 200px;">
-          <q-card-section>
-            <div class="text-h6">Artikelen verplaatsen</div>
-            <p>Hier kun je artikelen verplaatsen naar het huidige depot.</p>
-            <br />
-            <p v-if="!product">Scan een artikel om verder te gaan.</p>
-            <q-space />
-          </q-card-section>
-
-          <q-card-section v-if="product" class="bg-teal-1 text-grey-8">
-            <q-item>
-              <q-item-section>
-                <q-item-label>{{ product.ITEMNO }}</q-item-label>
-                <q-item-label caption lines="2">{{ product.DESC1 }}</q-item-label>
-              </q-item-section>
-
-              <q-item-section center>
-                <q-item-label>
-                  <q-icon name="fas fa-warehouse" style="margin-right: 10px;" />
-                  {{ product.CURRDEPOT }}
-                </q-item-label>
-              </q-item-section>
-
-              <q-item-section v-if="!product.UNIQUE" side>
-                <q-item-label caption>
-                  <q-btn round color="primary" icon="add" @click="incrementQty()" />
-                </q-item-label>
-              </q-item-section>
-
-              <q-item-section v-if="!product.UNIQUE" side>
-                <q-item-label style="text-align: center;">{{ product.QTY }}</q-item-label>
-              </q-item-section>
-
-              <q-item-section v-if="!product.UNIQUE" side>
-                <q-item-label>
-                  <q-btn round color="primary" icon="remove" @click="decrementQty()" />
-                </q-item-label>
-              </q-item-section>
-
-              <q-item-section v-if="product.UNIQUE" side>
-                <q-item-label caption>
-                  <q-chip color="primary" text-color="white">{{ product.QTY }}</q-chip>
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-card-section>
-
-          <q-card-actions v-if="product">
-            <q-btn color="primary" label="Verplaatsen" @click="transfer" style="margin-top: 10px;" />
-          </q-card-actions>
-        </q-card>
-      </div>
+  <div class="q-pa-md">
+    <div v-if="!products.length">
+      <br />
+      <br />
+      <p>Hier kun je artikelen verplaatsen naar het huidige depot.</p>
+      <p>Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
     </div>
+
+    <q-table
+      v-if="products.length"
+      title="Artikelen verplaatsen"
+      :data="products"
+      :columns="columns"
+      row-key="RECID"
+    >
+      <template v-slot:top-left>
+        <q-btn
+          dense
+          color="primary"
+          :disabled="!products.length"
+          label="Verplaatsen"
+          @click="transfer"
+        />
+      </template>
+
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
+          <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
+          <!-- <q-td key="CURRDEPOT" :props="props">{{ props.row.CURRDEPOT }}</q-td> -->
+          <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
+            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+            {{ props.row.QTY }}
+            <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
+              <q-list>
+                <q-item>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="add"
+                      @click="incrementQty(props.row.__index)"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label
+                      style="text-align: center; padding-right: 10px;"
+                    >{{ props.row.QTY }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-btn
+                      round
+                      color="primary"
+                      icon="remove"
+                      @click="decrementQty(props.row.__index)"
+                    />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-popup-edit>
+          </q-td>
+
+          <q-td key="CURRENT_STKLEVEL" :props="props">{{ props.row.CURRENT_STKLEVEL }}</q-td>
+          <q-td key="SOURCE_STKLEVEL" :props="props">{{ props.row.SOURCE_STKLEVEL }}</q-td>
+          <q-td key="DELETE" :props="props">
+            <q-icon
+              name="delete"
+              style="font-size: 1.5em; cursor: pointer;"
+              @click="deleteProduct(props.row.__index)"
+            />
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
   </div>
 </template>
 
 <script>
 const ioHook = require("iohook");
+import log from "electron-log";
+import { findIndex } from "lodash";
 
 export default {
   name: "StockTransfer",
 
   data() {
     return {
-      product: null,
+      columns: [
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DESC1",
+          required: true,
+          label: "Omschr. 1",
+          align: "left",
+          field: row => row.DESC1,
+          format: val => `${val}`,
+          sortable: true
+        },
+        // {
+        //   name: "CURRDEPOT",
+        //   required: true,
+        //   label: "Huidig depot",
+        //   align: "left",
+        //   field: row => row.CURRDEPOT,
+        //   format: val => `${val}`,
+        //   sortable: true
+        // },
+        {
+          name: "QTY",
+          label: "Aantal",
+          align: "left",
+          field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "CURRENT_STKLEVEL",
+          required: true,
+          label: `Voorraad huidig depot (${this.$store.state.user.DEPOT})`,
+          align: "left",
+          field: row => row.CURRENT_STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "SOURCE_STKLEVEL",
+          required: true,
+          label: `Voorraad bron depot (${this.$config.main_depot})`,
+          align: "left",
+          field: row => row.SOURCE_STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "DELETE",
+          required: true,
+          label: "Verwijderen",
+          align: "left",
+          sortable: false
+        }
+      ],
+      products: [],
       stockDepotSource: null,
       currentStockDepot: null,
       itemnumber: null,
@@ -82,14 +163,27 @@ export default {
   },
 
   methods: {
+    incrementQty: function(index) {
+      this.products[index].QTY++;
+    },
+
+    decrementQty: function(index) {
+      if (this.products[index].QTY === 1) return;
+      this.products[index].QTY--;
+    },
+
+    deleteProduct: function(index) {
+      this.products.splice(index, 1);
+    },
+
     getInput(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
-        this.itemnumber = this.code.replace(/\s/g, "");
+        this.itemnumber = this.code.replace(/\s/g, "").toUpperCase();
         this.getProduct();
         this.code = "";
       } else {
-        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
-        if (typeof char !== "undefined" && char.length && char !== ' ') {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
+        if (typeof char !== "undefined" && char.length && char !== " ") {
           this.code += char;
         }
       }
@@ -119,17 +213,23 @@ export default {
         )
         .then(res => {
           if (res && res.data && res.data.length) {
-            if (
-              this.product &&
-              this.product.ITEMNO === res.data[0].ITEMNO &&
-              !this.product.UNIQUE
-            ) {
-              this.product.QTY++;
-            } else {
-              res.data[0].QTY = res.data[0].STKLEVEL;
-              this.product = res.data[0];
-            }
+            const p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO);
 
+            if (p && !p.UNIQUE) {
+              p.QTY = parseInt(p.QTY) + 1;
+            } else if (p && p.UNIQUE) {
+              // notify?
+            } else {
+              this.products.push(
+                Object.assign(res.data[0], {
+                  QTY: 1,
+                  CURRENT_STKDEPOT_RECID: null,
+                  CURRENT_STKLEVEL: 0,
+                  SOURCE_STKDEPOT_RECID: null,
+                  SOURCE_STKLEVEL: 0
+                })
+              );
+            }
             this.getStockDepots();
           } else {
             this.notifyNotFound();
@@ -140,71 +240,110 @@ export default {
         });
     },
 
-    transfer() {
-      this.$api
-        .put(
+    async transferItem(item) {
+      let result;
+
+      try {
+        result = await this.$api.put(
           `${this.$config.container_api_base_url}stocktransfer`,
           {
             CODE: this.$store.state.user.DEPOT,
-            ITEMNO: this.product.ITEMNO,
-            QTY: this.product.QTY,
-            RECID: this.product.RECID,
-            STOCK_DEPOT_SOURCE: this.stockDepotSource,
-            CURRENT_STOCK_DEPOT: this.currentStockDepot
+            ITEMNO: item.ITEMNO,
+            QTY: item.QTY,
+            RECID: item.RECID,
+            STOCK_DEPOT_SOURCE: item.SOURCE_STKDEPOT_RECID,
+            CURRENT_STOCK_DEPOT: item.CURRENT_STKDEPOT_RECID
           },
           {
             auth: this.$config.container_api_basic_auth
           }
-        )
-        .then(res => {
-          this.$q.notify({
-            color: "green-4",
-            icon: "fas fa-check-circle",
-            message: `Artikel met code ${this.itemnumber} is overgeplaatst`
-          });
+        );
+      } catch (e) {
+        log.error(e);
+      }
 
-          this.itemnumber = null;
-          this.product = null;
-          this.stockdepot = null;
-        })
-        .catch(err => {
-          this.$q.notify({
-            color: "red-5",
-            icon: "fas fa-exclamation-triangle",
-            message:
-              "Er is iets misgegaan tijdens het verplaatsen van het artikel"
-          });
-        });
+      return result;
     },
 
-    getStockDepots() {
-      return this.$api
-        .get(
-          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,CODE`
-        )
-        .then(res => {
-          if (res.data && res.data.length) {
-            res.data.forEach(stkdepot => {
-              if (
-                this.$config.main_depot &&
-                stkdepot.CODE === this.$config.main_depot
-              ) {
-                this.stockDepotSource = stkdepot.RECID;
-              } else if (stkdepot.CODE === this.$store.state.user.DEPOT) {
-                this.currentStockDepot = stkdepot.RECID;
-              }
+    async transfer() {
+      let failed = 0,
+        success = 0;
+      const transferItemRequests = this.products.map(async p => {
+        return await this.transferItem(p);
+      });
+
+      const results = await Promise.all(transferItemRequests);
+
+      results.forEach(r => {
+        let body;
+
+        if (r && r.data) {
+          try {
+            body = JSON.parse(r.config.data);
+          } catch (e) {
+            log.error(e);
+          }
+        }
+
+        if (!r || r.status > 201) {
+          failed++;
+          if (body && body.ITEMNO) {
+            this.$q.notify({
+              color: "red-5",
+              icon: "fas fa-exclamation-triangle",
+              message: `Artikel met nummer ${body.ITEMNO} kon niet worden verplaatst.`
             });
           }
+        } else if (body && body.ITEMNO) {
+          success++;
+          const index = findIndex(this.products, { ITEMNO: body.ITEMNO });
+          if (index >= 0) this.products.splice(index, 1);
+        }
+      });
+
+      if (success) {
+        this.$q.notify({
+          color: "green-4",
+          icon: "fas fa-check-circle",
+          message: `Er ${(success > 1 ? 'zijn' : 'is')} ${success} ${(success > 1 ? 'artikelen' : 'artikel')} overgeplaatst.`
         });
+      }
     },
 
-    incrementQty: function(index) {
-      this.product.QTY++;
-    },
+    async getStockDepots() {
+      // get Stkdepot for CMAG
+      let source, current, result;
+      const p = this.products.find(p => p.ITEMNO === this.itemnumber);
+      if (!p) return;
 
-    decrementQty: function(index) {
-      if (this.product.QTY === 1) return;
-      this.product.QTY--;
+      try {
+        result = await this.$api.get(
+          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}' and CODE eq '${this.$config.main_depot}'&fields=RECID,CODE,STKLEVEL`
+        );
+
+        if (result && result.data && result.data.length) {
+          source = result.data[0];
+          p.SOURCE_STKDEPOT_RECID = source.RECID;
+          p.SOURCE_STKLEVEL = source.STKLEVEL;
+        }
+      } catch (e) {
+        log.error(e);
+      }
+
+      try {
+        result = await this.$api.get(
+          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=RECID,CODE,STKLEVEL`
+        );
+        if (result && result.data && result.data.length) {
+          current = result.data[0];
+          p.CURRENT_STKDEPOT_RECID = current.RECID;
+          p.CURRENT_STKLEVEL = current.STKLEVEL;
+        }
+      } catch (e) {
+        log.error(e);
+      }
+
+      log.info(p);
     }
   },
 

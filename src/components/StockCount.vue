@@ -410,7 +410,7 @@ export default {
 
     getInput: function(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
-        this.updateSelected(this.code.replace(/\s/g, ""));
+        this.updateSelected(this.code.replace(/\s/g, "").toUpperCase());
         this.code = "";
       } else {
         const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');

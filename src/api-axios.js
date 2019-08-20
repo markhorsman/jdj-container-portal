@@ -108,7 +108,12 @@ instance.interceptors.response.use(function (response) {
     return response;
 }, function (error) {
     eventHub.$emit('response-error');
-    if (error.response.status === 400 && error.response.data && error.response.data.Message && error.response.data.Message.toLowerCase().indexOf('invalid session id') >= 0) {
+    if (error.response &&
+        error.response.status === 400 &&
+        error.response.data &&
+        error.response.data.Message &&
+        error.response.data.Message.toLowerCase().indexOf('invalid session id') >= 0
+    ) {
         store.commit('logout')
     }
     return Promise.reject(error.response)

@@ -359,12 +359,12 @@ export default {
 
     getInput: function(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
-        this.itemnumber = this.code.replace(/\s/g, "");
+        this.itemnumber = this.code.replace(/\s/g, "").toUpperCase();
         this.getProduct();
         this.code = "";
       } else {
-        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
-        if (typeof char !== "undefined" && char.length && char !== ' ') {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
+        if (typeof char !== "undefined" && char.length && char !== " ") {
           this.code += char;
         }
       }
