@@ -50,7 +50,7 @@ export default new Vue({
       contitems: {
         top: 100,
         concurrency: 3,
-        fields: ['RECID', 'RECORDER', 'CONTNO', 'ITEMNO', 'ITEMDESC', 'ITEMDESC2', 'ITEMDESC3', 'STATUS', 'QTY', 'MEMO'],
+        fields: ['RECID', 'RECORDER', 'CONTNO', 'ITEMNO', 'ITEMDESC', 'ITEMDESC2', 'ITEMDESC3', 'STATUS', 'QTY', 'QTYRETD', 'MEMO'],
         total: 0
       }
     }

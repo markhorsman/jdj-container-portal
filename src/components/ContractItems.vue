@@ -43,9 +43,18 @@ export default {
         {
           name: "QTY",
           required: true,
-          label: "Aantal",
+          label: "Verhuurd",
           align: "left",
           field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTY",
+          required: true,
+          label: "Teruggebracht",
+          align: "left",
+          field: row => row.QTYRETD,
           format: val => `${val}`,
           sortable: true
         }
@@ -73,7 +82,7 @@ export default {
     getItems: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,ITEMDESC,MEMO`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
         )
         .then(res => {
           if (res && res.data && res.data.length) {

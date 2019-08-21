@@ -155,9 +155,18 @@ export default {
         {
           name: "QTY",
           required: true,
-          label: "Aantal",
+          label: "Verhuurd",
           align: "left",
           field: row => row.QTY,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTYRETD",
+          required: true,
+          label: "Teruggebracht",
+          align: "left",
+          field: row => row.QTYRETD,
           format: val => `${val}`,
           sortable: true
         }
@@ -306,7 +315,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY`
+          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
         )
         .then(res => {
           this.pagination.page = page;
@@ -327,7 +336,8 @@ export default {
         { field: "ITEMNO", displayName: "Artikelnummer" },
         { field: "ITEMDESC", displayName: "Omschrijving 1" },
         { field: "MEMO", displayName: "Memo" },
-        { field: "QTY", displayName: "Aantal" }
+        { field: "QTY", displayName: "Vehuurd" },
+        { field: "QTYRETD", displayName: "Teruggebracht" }
       ];
 
       printJS({

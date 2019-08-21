@@ -76,9 +76,9 @@
       >
         <p>Controleer de lijst met producten.</p>
         <q-table
-          v-if="products.length"
+          v-if="this.$store.state.rentalProducts.length"
           title="Artikelen"
-          :data="products"
+          :data="this.$store.state.rentalProducts"
           :columns="columns"
           :visible-columns="visibleColumns"
           :rows-per-page-options="[]"
@@ -376,7 +376,9 @@ export default {
             CONTNO: contno,
             ITEMNO: item.ITEMNO,
             CONTITEM_RECORDER: item.RECORDER,
-            QTY: item.QTY,
+            CONTITEM_HIRED: item.HIRED,
+            CONTITEM_QTYRETD: item.QTYRETD,
+            QTY: (item.QTYOK + item.QTYDAM + item.QTYLOST),
             QTYOK: item.QTYOK,
             QTYDAM: item.QTYDAM,
             QTYLOST: item.QTYLOST,
@@ -418,7 +420,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO`,
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`,
           {},
           {
             headers: {
@@ -524,7 +526,7 @@ export default {
 
         if (match) {
           products.push(
-            Object.assign(p, { RECID: match.RECID, RECORDER: match.RECORDER })
+            Object.assign(p, { RECID: match.RECID, RECORDER: match.RECORDER, HIRED: match.QTY, QTYRETD: match.QTYRETD })
           );
         }
       });

@@ -194,6 +194,7 @@ import { eventHub } from "../eventhub";
 import { emailStockCount } from "../mailer";
 import printJS from "print-js";
 const ioHook = require("iohook");
+const throat = require("throat")(Promise);
 
 export default {
   data() {
@@ -202,14 +203,14 @@ export default {
       selectedPagination: {
         descending: false,
         page: 1,
-        rowsPerPage: 100
+        rowsPerPage: 10
       },
       pagination: {
         rowsNumber: 0,
         sortBy: "ITEMNO",
         descending: false,
         page: 1,
-        rowsPerPage: 100
+        rowsPerPage: 10
       },
       columns: [
         {
@@ -324,7 +325,7 @@ export default {
   },
 
   methods: {
-    onRequest(props) {
+    async onRequest(props) {
       let {
         page,
         rowsPerPage,
@@ -353,12 +354,22 @@ export default {
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
           }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
         )
-        .then(res => {
+        .then(async res => {
           this.pagination.page = page;
           this.pagination.rowsPerPage = rowsPerPage;
           this.pagination.rowsNumber = res.data.totalCount;
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
+
+          const data = await Promise.all(
+            res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+          );
+
+          data.forEach(r => {
+            const s = r.data[0];
+            const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
+            if (product) product.STKLEVEL = s.STKLEVEL;
+          });
 
           this.tableData = res.data.results.reduce((acc, p) => {
             const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
@@ -382,6 +393,27 @@ export default {
         })
         .catch(() => {})
         .finally(() => (this.loading = false));
+    },
+
+    async getStockLevel(itemno) {
+      let result;
+
+      try {
+        result = await this.$api.get(
+          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
+          {},
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
+        );
+      } catch (e) {
+        log.error(e);
+        result = null;
+      }
+
+      return result;
     },
 
     getSubGroups: function() {

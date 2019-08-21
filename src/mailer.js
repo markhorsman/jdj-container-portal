@@ -64,7 +64,8 @@ const emailContractItems = (products, email, subject) => {
             <th style="text-align: left;">Artikelnummer</th>
             <th style="text-align: left;">Omschrijving</th>
             <th style="text-align: left;">Memo</th>
-            <th style="text-align: left;">Aantal</th>
+            <th style="text-align: left;">Verhuurd</th>
+            <th style="text-align: left;">Teruggebracht</th>
         </tr>
     </thead>
     <tbody>
@@ -77,6 +78,7 @@ const emailContractItems = (products, email, subject) => {
         <td>${p.ITEMDESC}</td>
         <td>${p.MEMO}</td>
         <td>${p.QTY}</td>
+        <td>${p.QTYRETD}</td>
     </tr>`);
 
     body += '</tbody></table>';
