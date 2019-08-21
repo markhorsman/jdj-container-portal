@@ -146,6 +146,9 @@ import { sortBy } from "lodash";
 const ioHook = require("iohook");
 import { eventHub } from "../eventhub";
 import { emailStock } from "../mailer";
+import log from "electron-log";
+
+const throat = require("throat")(Promise);
 
 export default {
   name: "Stock",
@@ -274,7 +277,7 @@ export default {
   },
 
   methods: {
-    onRequest(props) {
+    async onRequest(props) {
       let {
         page,
         rowsPerPage,
@@ -299,25 +302,67 @@ export default {
           this.statusInRepair ? ` and STATUS eq 2` : ``
         }`;
 
+      eventHub.$emit("before-request");
+
       this.$api
         .get(
           `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`,
+          {},
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
-        .then(res => {
+        .then(async res => {
           this.pagination.page = page;
           this.pagination.rowsPerPage = rowsPerPage;
           this.pagination.rowsNumber = res.data.totalCount;
           this.pagination.sortBy = sortBy;
           this.pagination.descending = descending;
 
+          const data = await Promise.all(
+            res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+          );
+
+          data.forEach(r => {
+            const s = r.data[0];
+            const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
+            if (product) product.STKLEVEL = s.STKLEVEL;
+          });
+
           this.tableData = res.data.results;
         })
         .catch(() => {})
-        .finally(() => (this.loading = false));
+        .finally(() => {
+          this.loading = false;
+          eventHub.$emit("after-response");
+        });
+    },
+
+    async getStockLevel(itemno) {
+      let result;
+
+      try {
+        result = await this.$api.get(
+          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
+          {},
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
+        );
+      } catch (e) {
+        log.error(e);
+        result = null;
+      }
+
+      return result;
     },
 
     getGroups: function() {
@@ -437,11 +482,7 @@ export default {
       this.chooseEmail = false;
       eventHub.$emit("before-request");
 
-      return emailStock(
-        list,
-        this.emailaddress,
-        "Voorraad lijst"
-      )
+      return emailStock(list, this.emailaddress, "Voorraad lijst")
         .then(info => {
           this.$q.notify({
             color: "green-4",
