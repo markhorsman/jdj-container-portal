@@ -50,7 +50,7 @@ export default {
           sortable: true
         },
         {
-          name: "QTY",
+          name: "QTYRETD",
           required: true,
           label: "Teruggebracht",
           align: "left",

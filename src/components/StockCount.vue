@@ -189,7 +189,7 @@
 </template>
 
 <script>
-import { findIndex, clone } from "lodash";
+import { findIndex, clone, sortBy } from "lodash";
 import { eventHub } from "../eventhub";
 import { emailStockCount } from "../mailer";
 import printJS from "print-js";
@@ -419,13 +419,19 @@ export default {
     getSubGroups: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
         )
         .then(res => {
-          this.subgroups = res.data.reduce((acc, grp) => {
-            acc.push({ label: grp.NAME, value: grp.CODE });
-            return acc;
-          }, []);
+          this.subgroups = sortBy(
+            res.data.reduce((acc, grp) => {
+              acc.push({
+                label: `${grp.CODE} - ${grp.NAME}`,
+                value: grp.CODE
+              });
+              return acc;
+            }, []),
+            "label"
+          );
 
           this.subgroupOptions = this.subgroups;
         })
@@ -445,8 +451,8 @@ export default {
         this.updateSelected(this.code.replace(/\s/g, "").toUpperCase());
         this.code = "";
       } else {
-        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, '');
-        if (typeof char !== "undefined" && char.length && char !== ' ') {
+        const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
+        if (typeof char !== "undefined" && char.length && char !== " ") {
           this.code += char;
         }
       }

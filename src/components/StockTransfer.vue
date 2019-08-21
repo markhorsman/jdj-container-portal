@@ -398,8 +398,6 @@ export default {
       } catch (e) {
         log.error(e);
       }
-
-      log.info(p);
     }
   },
 
