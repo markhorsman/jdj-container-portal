@@ -65,7 +65,7 @@
           :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
           :isOffhire="rentalType === 'return'"
         />
-        <ContractItems v-if="rentalType === 'return'" :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"/>
+        <ContractItems v-if="rentalType === 'return' && this.$store.state.customer" :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"/>
       </q-step>
 
       <q-step
@@ -384,7 +384,8 @@ export default {
             QTYLOST: item.QTYLOST,
             UNIQUE: item.UNIQUE,
             USERNAME: this.$store.state.user.USERNAME,
-            MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
+            MEMO: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`,
+            DEPOT: this.$store.state.user.DEPOT
           },
           {
             auth: this.$config.container_api_basic_auth,
