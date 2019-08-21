@@ -2,7 +2,7 @@
   <div class="q-pa-md">
     <q-table
       v-if="items.length"
-      title="Momenteel op naam"
+      :title="title"
       :data="items"
       :columns="columns"
       :rows-per-page-options="[]"
@@ -16,6 +16,7 @@ import { eventHub } from "../eventhub";
 
 export default {
   name: "ContractItems",
+  props: ["title"],
 
   data() {
     return {

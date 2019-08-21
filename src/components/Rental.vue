@@ -65,7 +65,7 @@
           :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
           :isOffhire="rentalType === 'return'"
         />
-        <ContractItems v-if="rentalType === 'return'" />
+        <ContractItems v-if="rentalType === 'return'" :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"/>
       </q-step>
 
       <q-step
