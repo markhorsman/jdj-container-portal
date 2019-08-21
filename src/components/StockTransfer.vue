@@ -1,19 +1,31 @@
 <template>
   <div class="q-pa-md">
+    <q-dialog v-model="confirmToggleDepot" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="fas fa-exchange-alt" color="primary" text-color="white" />
+          <span
+            class="q-ml-sm"
+          >Weet je zeker dat je richting wilt veranderen? De huidige producten dien je opnieuw toe te voegen.</span>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Ja" color="danger" @click="reset" v-close-popup />
+          <q-btn flat label="Nee" color="primary" @click="cancelToggleDepot" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <div v-if="!products.length">
       <br />
       <br />
-      <p>Hier kun je artikelen verplaatsen naar het huidige depot.</p>
-      <p>Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
+      <p>
+        Hier kun je artikelen verplaatsen van en naar het huidige depot.
+        <br />Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.
+      </p>
     </div>
 
-    <q-table
-      v-if="products.length"
-      title="Artikelen verplaatsen"
-      :data="products"
-      :columns="columns"
-      row-key="RECID"
-    >
+    <q-table title="Artikelen verplaatsen" :data="products" :columns="columns" row-key="RECID">
       <template v-slot:top-left>
         <q-btn
           dense
@@ -24,11 +36,18 @@
         />
       </template>
 
+      <template v-slot:top-right>
+        <q-toggle
+          @input="toggleDepot"
+          v-model="to_current_depot"
+          :label="`Van ${(to_current_depot ? source_depot : destination_depot)} naar ${(to_current_depot ? destination_depot : source_depot)}`"
+        />
+      </template>
+
       <template v-slot:body="props">
         <q-tr :props="props">
           <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
           <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
-          <!-- <q-td key="CURRDEPOT" :props="props">{{ props.row.CURRDEPOT }}</q-td> -->
           <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ props.row.QTY }}
@@ -61,8 +80,8 @@
             </q-popup-edit>
           </q-td>
 
-          <q-td key="CURRENT_STKLEVEL" :props="props">{{ props.row.CURRENT_STKLEVEL }}</q-td>
-          <q-td key="SOURCE_STKLEVEL" :props="props">{{ props.row.SOURCE_STKLEVEL }}</q-td>
+          <q-td key="CURRENT_DEPOT_STKLEVEL" :props="props">{{ props.row.CURRENT_DEPOT_STKLEVEL }}</q-td>
+          <q-td key="MAIN_DEPOT_STKLEVEL" :props="props">{{ props.row.MAIN_DEPOT_STKLEVEL }}</q-td>
           <q-td key="DELETE" :props="props">
             <q-icon
               name="delete"
@@ -105,15 +124,6 @@ export default {
           format: val => `${val}`,
           sortable: true
         },
-        // {
-        //   name: "CURRDEPOT",
-        //   required: true,
-        //   label: "Huidig depot",
-        //   align: "left",
-        //   field: row => row.CURRDEPOT,
-        //   format: val => `${val}`,
-        //   sortable: true
-        // },
         {
           name: "QTY",
           label: "Aantal",
@@ -123,20 +133,20 @@ export default {
           sortable: true
         },
         {
-          name: "CURRENT_STKLEVEL",
+          name: "CURRENT_DEPOT_STKLEVEL",
           required: true,
-          label: `Voorraad huidig depot (${this.$store.state.user.DEPOT})`,
+          label: `Voorraad ${this.$store.state.user.DEPOT}`,
           align: "left",
-          field: row => row.CURRENT_STKLEVEL,
+          field: row => row.CURRENT_DEPOT_STKLEVEL,
           format: val => `${val}`,
           sortable: true
         },
         {
-          name: "SOURCE_STKLEVEL",
+          name: "MAIN_DEPOT_STKLEVEL",
           required: true,
-          label: `Voorraad bron depot (${this.$config.main_depot})`,
+          label: `Voorraad ${this.$config.main_depot}`,
           align: "left",
-          field: row => row.SOURCE_STKLEVEL,
+          field: row => row.MAIN_DEPOT_STKLEVEL,
           format: val => `${val}`,
           sortable: true
         },
@@ -148,12 +158,15 @@ export default {
           sortable: false
         }
       ],
+
       products: [],
-      stockDepotSource: null,
-      currentStockDepot: null,
+      to_current_depot: true,
+      source_depot: this.$config.main_depot,
+      destination_depot: this.$store.state.user.DEPOT || null,
       itemnumber: null,
       code: "",
-      reading: false
+      reading: false,
+      confirmToggleDepot: false
     };
   },
 
@@ -162,7 +175,37 @@ export default {
     ioHook.start();
   },
 
+  computed: {
+    hasCustomer() {
+      return !!this.$store.state.customer;
+    },
+    hasProducts() {
+      return !!this.$store.state.rentalProducts.length;
+    }
+  },
+
+
   methods: {
+    toggleDepot(v) {
+      if (this.products.length) this.confirmToggleDepot = true;
+
+      if (v) {
+        this.destination_depot = this.$store.state.user.DEPOT;
+        this.source_depot = this.$config.main_depot;
+      } else {
+        this.destination_depot = this.$config.main_depot;
+        this.source_depot = this.$store.state.user.DEPOT;
+      }
+    },
+
+    reset() {
+      this.products = [];
+    },
+
+    cancelToggleDepot() {
+      this.to_current_depot = !this.to_current_depot;
+    },
+
     incrementQty: function(index) {
       this.products[index].QTY++;
     },
@@ -223,10 +266,10 @@ export default {
               this.products.push(
                 Object.assign(res.data[0], {
                   QTY: 1,
-                  CURRENT_STKDEPOT_RECID: null,
-                  CURRENT_STKLEVEL: 0,
+                  DESTINATION_STKDEPOT_RECID: null,
+                  CURRENT_DEPOT_STKLEVEL: 0,
                   SOURCE_STKDEPOT_RECID: null,
-                  SOURCE_STKLEVEL: 0
+                  MAIN_DEPOT_STKLEVEL: 0
                 })
               );
             }
@@ -252,7 +295,7 @@ export default {
             QTY: item.QTY,
             RECID: item.RECID,
             STOCK_DEPOT_SOURCE: item.SOURCE_STKDEPOT_RECID,
-            CURRENT_STOCK_DEPOT: item.CURRENT_STKDEPOT_RECID
+            CURRENT_STOCK_DEPOT: item.DESTINATION_STKDEPOT_RECID
           },
           {
             auth: this.$config.container_api_basic_auth
@@ -305,14 +348,16 @@ export default {
         this.$q.notify({
           color: "green-4",
           icon: "fas fa-check-circle",
-          message: `Er ${(success > 1 ? 'zijn' : 'is')} ${success} ${(success > 1 ? 'artikelen' : 'artikel')} overgeplaatst.`
+          message: `Er ${success > 1 ? "zijn" : "is"} ${success} ${
+            success > 1 ? "artikelen" : "artikel"
+          } overgeplaatst.`
         });
       }
     },
 
     async getStockDepots() {
       // get Stkdepot for CMAG
-      let source, current, result;
+      let main, current, result;
       const p = this.products.find(p => p.ITEMNO === this.itemnumber);
       if (!p) return;
 
@@ -322,9 +367,14 @@ export default {
         );
 
         if (result && result.data && result.data.length) {
-          source = result.data[0];
-          p.SOURCE_STKDEPOT_RECID = source.RECID;
-          p.SOURCE_STKLEVEL = source.STKLEVEL;
+          main = result.data[0];
+          if (this.to_current_depot) {
+            p.SOURCE_STKDEPOT_RECID = main.RECID;
+          } else {
+            p.DESTINATION_STKDEPOT_RECID = main.RECID;
+          }
+
+          p.MAIN_DEPOT_STKLEVEL = main.STKLEVEL;
         }
       } catch (e) {
         log.error(e);
@@ -336,8 +386,14 @@ export default {
         );
         if (result && result.data && result.data.length) {
           current = result.data[0];
-          p.CURRENT_STKDEPOT_RECID = current.RECID;
-          p.CURRENT_STKLEVEL = current.STKLEVEL;
+
+          if (this.to_current_depot) {
+            p.DESTINATION_STKDEPOT_RECID = current.RECID;
+          } else {
+            p.SOURCE_STKDEPOT_RECID = current.RECID;
+          }
+
+          p.CURRENT_DEPOT_STKLEVEL = current.STKLEVEL;
         }
       } catch (e) {
         log.error(e);

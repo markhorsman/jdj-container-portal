@@ -157,7 +157,7 @@
                 <q-icon name="fas fa-exchange-alt" />
               </q-item-section>
               <q-item-section>
-                <q-item-label>Artikel toevoegen</q-item-label>
+                <q-item-label>Artikelen verplaatsen</q-item-label>
                 <q-item-label caption>Depot transfer</q-item-label>
               </q-item-section>
             </q-item>
