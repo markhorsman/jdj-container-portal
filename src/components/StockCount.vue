@@ -346,13 +346,20 @@ export default {
         ${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}
         `;
 
+      eventHub.$emit("before-request");
+
       return this.$api
         .get(
           `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
         .then(async res => {
           this.pagination.page = page;
@@ -392,7 +399,10 @@ export default {
           }, []);
         })
         .catch(() => {})
-        .finally(() => (this.loading = false));
+        .finally(() => {
+          this.loading = false;
+          eventHub.$emit("after-response");
+        });
     },
 
     async getStockLevel(itemno) {
@@ -401,7 +411,6 @@ export default {
       try {
         result = await this.$api.get(
           `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
-          {},
           {
             headers: {
               skipLoader: true
@@ -419,7 +428,12 @@ export default {
     getSubGroups: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP&$orderby=CODE asc`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
         .then(res => {
           this.subgroups = sortBy(
