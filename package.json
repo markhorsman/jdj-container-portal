@@ -36,6 +36,7 @@
     "nfc-pcsc": "^0.6.2",
     "nodemailer": "^6.3.0",
     "odata-parser": "^1.4.1",
+    "papaparse": "^5.0.2",
     "print-js": "^1.0.61",
     "quasar": "^1.0.0",
     "quasar-extras": "^2.0.9",

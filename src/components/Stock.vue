@@ -311,7 +311,6 @@ export default {
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
           }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`,
-          {},
           {
             headers: {
               skipLoader: true
@@ -349,8 +348,7 @@ export default {
 
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
-          {},
+          `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
           {
             headers: {
               skipLoader: true
@@ -368,10 +366,20 @@ export default {
     getGroups: function() {
       Promise.all([
         this.$api.get(
-          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`
+          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         ),
         this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP`
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
       ])
         .then(res => {

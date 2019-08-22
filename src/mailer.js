@@ -1,6 +1,9 @@
 const nodemailer = require('nodemailer');
 
 import config from '../config'
+import Papa from 'papaparse'
+
+const genCSVFile = list => Papa.unparse(list);
 
 const emailStockCount = (products, email, subject, intro) => {
     let body = `
@@ -42,6 +45,20 @@ const emailStockCount = (products, email, subject, intro) => {
         to: email, // list of receivers
         subject, // Subject line
         html: body, // html body
+        attachments: [{
+            filename: `${subject.toLowerCase()}.csv`,
+            content: genCSVFile(products.reduce((acc, p) => {
+                const prepped = {};
+                prepped['Artikelnummer'] = p.ITEMNO;
+                prepped['Productgroep'] = p.PGROUP;
+                prepped['Subgroep'] = p.GRPCODE;
+                prepped['Omschrijving'] = p.DESC1;
+                prepped['Voorraad'] = p.STKLEVEL;
+                prepped['Telling'] = p.QTY;
+                acc.push(prepped);
+                return acc;
+            }, []))
+        }]
     };
 
     return new Promise((resolve, reject) => {
@@ -93,6 +110,20 @@ const emailContractItems = (products, email, subject) => {
         to: email, // list of receivers
         subject, // Subject line
         html: body, // html body
+        attachments: [{
+            filename: `artikelen-contract-${products[0].CONTNO}.csv`,
+            content: genCSVFile(products.reduce((acc, p) => {
+                const prepped = {};
+                prepped['Contractnummer'] = p.CONTNO;
+                prepped['Artikelnummer'] = p.ITEMNO;
+                prepped['Omschrijving'] = p.ITEMDESC;
+                prepped['Memo'] = p.MEMO;
+                prepped['Verhuurd'] = p.QTY;
+                prepped['Teruggebracht'] = p.QTYRETD;
+                acc.push(prepped);
+                return acc;
+            }, []))
+        }]
     };
 
     return new Promise((resolve, reject) => {
@@ -138,6 +169,17 @@ const emailStock = (products, email, subject) => {
         to: email, // list of receivers
         subject, // Subject line
         html: body, // html body
+        attachments: [{
+            filename: 'voorraad-lijst.csv',
+            content: genCSVFile(products.reduce((acc, p) => {
+                const prepped = {};
+                prepped['Artikelnummer'] = p.ITEMNO;
+                prepped['Omschrijving'] = p.DESC1;
+                prepped['Voorraad'] = p.STKLEVEL;
+                acc.push(prepped);
+                return acc;
+            }, []))
+        }]
     };
 
     return new Promise((resolve, reject) => {
