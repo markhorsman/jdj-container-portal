@@ -171,6 +171,7 @@ export default {
           sortable: true
         }
       ],
+      code: "",
       tableData: [],
       filter: "",
       loading: false,
