@@ -74,6 +74,29 @@
           </template>
         </q-input>
       </template>
+
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="CONTNO" :props="props">{{ props.row.CONTNO }}</q-td>
+          <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
+          <q-td key="ITEMDESC" :props="props">{{ props.row.ITEMDESC }}</q-td>
+          <q-td key="ITEMDESC2" :props="props">{{ props.row.ITEMDESC2 }}</q-td>
+          <q-td key="ITEMDESC3" :props="props">{{ props.row.ITEMDESC3 }}</q-td>
+          <q-td key="MEMO" :props="props">
+            <!-- <q-icon name="fas fa-edit" /> -->
+            {{ props.row.MEMO }}
+            <q-popup-edit
+              v-model="props.row.MEMO"
+              buttons
+              @save="(value, initialValue) => updateMemo(props.row.__index, value, initialValue)"
+            >
+              <q-input v-model="props.row.MEMO" autofocus />
+            </q-popup-edit>
+          </q-td>
+          <q-td key="QTY" :props="props">{{ props.row.QTY }}</q-td>
+          <q-td key="QTYRETD" :props="props">{{ props.row.QTYRETD }}</q-td>
+        </q-tr>
+      </template>
     </q-table>
   </div>
 </template>
@@ -84,6 +107,7 @@ import { eventHub } from "../eventhub";
 import { emailContractItems } from "../mailer";
 import printJS from "print-js";
 const ioHook = require("iohook");
+import log from "electron-log";
 
 export default {
   name: "Items",
@@ -316,7 +340,7 @@ export default {
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=RECID,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
+          }&$filter=${buildFilter()}&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
         )
         .then(res => {
           this.pagination.page = page;
@@ -376,6 +400,34 @@ export default {
         .finally(() => {
           eventHub.$emit("after-response");
         });
+    },
+
+    async updateMemo(index, value, initialValue) {
+      const item = this.tableData[index];
+      let result;
+
+      try {
+        result = await this.$api.put(
+          `${this.$config.container_api_base_url}contitem/${item.RECORDER}`,
+          {
+            MEMO: value
+          },
+          { auth: this.$config.container_api_basic_auth }
+        );
+
+        this.$q.notify({
+          color: "green-4",
+          icon: "fas fa-exclamation-triangle",
+          message: `Het memo veld van contract artikel ${item.ITEMNO} is aangepast.`
+        });
+      } catch (e) {
+        log.error(e);
+        this.$q.notify({
+          color: "red-5",
+          icon: "fas fa-exclamation-triangle",
+          message: `Het updaten van het contract artikel ${item.ITEMNO} met memo ${value} is mislukt.`
+        });
+      }
     }
   },
 

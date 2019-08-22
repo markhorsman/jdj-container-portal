@@ -38,8 +38,7 @@ export default new Vue({
   data: {
     caching: false,
     cacheInterval: null,
-    refresh: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 5 * 60 * 1000,
+    cacheTime: 15 * 60 * 1000,
     cache: {
       stock: {
         top: 100,
