@@ -45,6 +45,7 @@
 
 <script>
 import { required } from "vuelidate/lib/validators";
+import { eventHub } from "../eventhub";
 
 export default {
   name: "Login",
@@ -86,6 +87,11 @@ export default {
             USERNAME: this.username,
             PASSWORD: this.password,
             DEPOT: this.depot.toUpperCase()
+          },
+          {
+            headers: {
+              skipLoader: true
+            }
           });
       } catch (e) {
         console.log(e);
@@ -101,7 +107,12 @@ export default {
       try {
         result = await this.$api
         .get(
-          `${this.$config.api_base_url}users/?api_key=${key}&$fields=RECID,GRPCODE`
+          `${this.$config.api_base_url}users/?api_key=${key}&$fields=RECID,GRPCODE`,
+          {
+            headers: {
+              skipLoader: true
+            }
+          }
         )
       } catch (e) {
         console.log(e);
@@ -123,6 +134,7 @@ export default {
       this.$v.$touch();
 
       if (!this.$v.$invalid) {
+        eventHub.$emit("before-request");
         let result = await this.logon();
 
         if (!result) {
@@ -139,6 +151,8 @@ export default {
         
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("api_key", user.SESSIONID);
+
+        eventHub.$emit("after-response");
 
         if (localStorage.getItem("api_key") != null) {
           this.$store.commit("login", user);
