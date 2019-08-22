@@ -119,7 +119,7 @@ export default {
         sortBy: "ITEMNO",
         descending: false,
         page: 1,
-        rowsPerPage: 10
+        rowsPerPage: 25
       },
       columns: [
         {

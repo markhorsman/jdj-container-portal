@@ -201,6 +201,7 @@
             unelevated
             color="primary"
             :icon="miniState ? 'chevron_right' : 'chevron_left'"
+            size="0.9em"
             @click="miniState = !miniState"
           />
         </div>

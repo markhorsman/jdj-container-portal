@@ -1,45 +1,53 @@
 <template>
-  <div class="q-pa-md" style="max-width: 400px">
-    <h5>Inloggen</h5>
-    <q-form @submit="handleSubmit" @reset="onReset" class="q-gutter-md">
-      <q-input
-        filled
-        v-model="$v.username.$model"
-        id="username"
-        :rules="[val => !!val || 'Gebruikersnaam is verplicht']"
-        label="Gebruikersnaam"
-      />
-      <q-input
-        v-model="$v.password.$model"
-        id="password"
-        filled
-        :type="isPwd ? 'password' : 'text'"
-        label="Wachtwoord"
-        :rules="[val => !!val || 'Wachtwoord is verplicht']"
-      >
-        <template v-slot:append>
-          <q-icon
-            :name="isPwd ? 'visibility_off' : 'visibility'"
-            class="cursor-pointer"
-            @click="isPwd = !isPwd"
-          />
-        </template>
-      </q-input>
+  <div class="q-pa-md">
+    <div class="row">
+      <div class="col-xs-12 col-sm-6 offset-sm-3 col-lg-4 offset-lg-4">
+        <q-card>
+          <q-card-section>
+          <h5>Inloggen</h5>
+          <q-form @submit="handleSubmit" @reset="onReset" class="q-gutter-md">
+            <q-input
+              filled
+              v-model="$v.username.$model"
+              id="username"
+              :rules="[val => !!val || 'Gebruikersnaam is verplicht']"
+              label="Gebruikersnaam"
+            />
+            <q-input
+              v-model="$v.password.$model"
+              id="password"
+              filled
+              :type="isPwd ? 'password' : 'text'"
+              label="Wachtwoord"
+              :rules="[val => !!val || 'Wachtwoord is verplicht']"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="isPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="isPwd = !isPwd"
+                />
+              </template>
+            </q-input>
 
-      <q-input
-        filled
-        v-model="$v.depot.$model"
-        id="depot"
-        :rules="[val => !!val || 'Depot is verplicht']"
-        label="Depot"
-      />
+            <q-input
+              filled
+              v-model="$v.depot.$model"
+              id="depot"
+              :rules="[val => !!val || 'Depot is verplicht']"
+              label="Depot"
+            />
 
-      <div>
-        <p v-show="errored" class="error">Inloggegevens onjuist</p>
-        <q-btn label="Login" type="submit" color="primary" />
-        <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
+            <q-card-actions align="right">
+              <p v-show="errored" class="error">Inloggegevens onjuist</p>
+              <q-btn label="Login" type="submit" color="primary" />
+              <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
+            </q-card-actions>
+          </q-form>
+          </q-card-section>
+        </q-card>
       </div>
-    </q-form>
+    </div>
   </div>
 </template>
 
@@ -49,7 +57,7 @@ import { eventHub } from "../eventhub";
 
 export default {
   name: "Login",
-  
+
   data() {
     return {
       errored: false,
@@ -82,8 +90,9 @@ export default {
       let result;
 
       try {
-        result = await this.$api
-          .post(`${this.$config.api_base_url}/sessions/logon`, {
+        result = await this.$api.post(
+          `${this.$config.api_base_url}/sessions/logon`,
+          {
             USERNAME: this.username,
             PASSWORD: this.password,
             DEPOT: this.depot.toUpperCase()
@@ -92,7 +101,8 @@ export default {
             headers: {
               skipLoader: true
             }
-          });
+          }
+        );
       } catch (e) {
         console.log(e);
         result = false;
@@ -105,15 +115,14 @@ export default {
       let result, user;
 
       try {
-        result = await this.$api
-        .get(
+        result = await this.$api.get(
           `${this.$config.api_base_url}users/?api_key=${key}&$fields=RECID,GRPCODE`,
           {
             headers: {
               skipLoader: true
             }
           }
-        )
+        );
       } catch (e) {
         console.log(e);
         result = false;
@@ -121,7 +130,9 @@ export default {
       }
 
       if (result && result.data && result.data.length) {
-        user = result.data.find(u => u.NAME === this.username && u.PASSWORD === this.password);
+        user = result.data.find(
+          u => u.NAME === this.username && u.PASSWORD === this.password
+        );
       }
 
       return user;
@@ -148,7 +159,7 @@ export default {
         if (result) {
           user.GRPCODE = result.GRPCODE;
         }
-        
+
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("api_key", user.SESSIONID);
 
@@ -161,7 +172,7 @@ export default {
             this.$router.push(this.$route.params.nextUrl);
           } else {
             this.$router.push("/");
-          } 
+          }
         }
       }
     }

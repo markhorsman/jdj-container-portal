@@ -56,6 +56,7 @@ import {
   QKnob,
   QExpansionItem,
   QSpinnerRadio,
+  QBanner,
   Loading,
   ClosePopup,
   Notify,
@@ -114,6 +115,7 @@ Vue.use(Quasar, {
     QKnob,
     QExpansionItem,
     QSpinnerRadio,
+    QBanner
   },
   directives: {
     ClosePopup,

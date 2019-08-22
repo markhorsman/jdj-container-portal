@@ -16,14 +16,17 @@
       </q-card>
     </q-dialog>
 
-    <div v-if="!products.length">
-      <br />
-      <br />
+    <q-banner class="bg-grey-3" style="margin-bottom: 20px;">
+      <div class="text-h6" style="margin-bottom: 10px;">Artikelen verplaatsen</div>
       <p>
-        Hier kun je artikelen verplaatsen van en naar het huidige depot.
-        <br />Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.
+        Scan een of meerdere artikelen met een barcode scanner en klik op onderstaande knop om ze te verplaatsen van of naar het huidige depot.
       </p>
-    </div>
+    </q-banner>
+    <!-- <q-card style="margin-bottom: 20px;">
+      <q-card-section>
+        
+      </q-card-section>
+    </q-card>-->
 
     <q-table title="Artikelen verplaatsen" :data="products" :columns="columns" row-key="RECID">
       <template v-slot:top-left>
@@ -183,7 +186,6 @@ export default {
       return !!this.$store.state.rentalProducts.length;
     }
   },
-
 
   methods: {
     toggleDepot(v) {

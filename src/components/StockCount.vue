@@ -84,107 +84,108 @@
 
     <br />
 
-    <q-table
-      title="Niet-geteld"
-      :data="tableData"
-      :columns="columns"
-      row-key="ITEMNO"
-      :loading="loading"
-      :filter="filter"
-      :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100, 200, 300]"
-      :pagination.sync="pagination"
-      @request="onRequest"
-      class="float-left"
-      style="width: 49%;"
-    >
-      <template v-slot:top-left>
-        <q-btn
-          dense
-          color="primary"
-          :disabled="!tableData.length"
-          label="Lijst ongeteld genereren"
-          @click="genList = true; listType = 'uncounted';"
-        />
-      </template>
-      <template v-slot:top-right>
-        <q-input
-          borderless
-          dense
-          debounce="500"
-          v-model="filter"
-          placeholder="Zoek op artikelnummer"
+    <div class="row q-col-gutter-md">
+      <div class="col-sm-12 col-md-6">
+        <q-table
+          title="Niet-geteld"
+          :data="tableData"
+          :columns="columns"
+          row-key="ITEMNO"
+          :loading="loading"
+          :filter="filter"
+          :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100, 200, 300]"
+          :pagination.sync="pagination"
+          @request="onRequest"
         >
-          <template v-slot:append>
-            <q-icon name="search" />
+          <template v-slot:top-left>
+            <q-btn
+              dense
+              color="primary"
+              :disabled="!tableData.length"
+              label="Lijst ongeteld genereren"
+              @click="genList = true; listType = 'uncounted';"
+            />
           </template>
-        </q-input>
-      </template>
-    </q-table>
-
-    <q-table
-      title="Geteld"
-      :data="selected"
-      :columns="selectedColumns"
-      :rows-per-page-options="[]"
-      :pagination.sync="selectedPagination"
-      row-key="ITEMNO"
-      class="float-right"
-      style="width: 49%;"
-    >
-      <template v-slot:top-left>
-        <q-btn
-          dense
-          color="primary"
-          :disabled="!selected.length"
-          label="Tellijst genereren"
-          @click="genList = true; listType = 'counted';"
-        />
-      </template>
-
-      <template v-slot:body="props">
-        <q-tr :props="props">
-          <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
-          <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
-          <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
-            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
-            {{ props.row.QTY }}
-            <q-popup-edit
-              v-model="props.row.QTY"
-              buttons
-              v-if="!props.row.UNIQUE"
-              @save="(value, initialValue) => saveQTY(props.row.__index, value, initialValue)"
+          <template v-slot:top-right>
+            <q-input
+              borderless
+              dense
+              debounce="500"
+              v-model="filter"
+              placeholder="Zoek op artikelnummer"
             >
-              <q-list>
-                <q-item>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="add"
-                      @click="incrementQty(props.row.__index)"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label
-                      style="text-align: center; padding-right: 10px;"
-                    >{{ props.row.QTY }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="remove"
-                      @click="decrementQty(props.row.__index)"
-                    />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-popup-edit>
-          </q-td>
-          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
-        </q-tr>
-      </template>
-    </q-table>
+              <template v-slot:append>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+          </template>
+        </q-table>
+      </div>
+      <div class="col-sm-12 col-md-6">
+        <q-table
+          title="Geteld"
+          :data="selected"
+          :columns="selectedColumns"
+          :rows-per-page-options="[]"
+          :pagination.sync="selectedPagination"
+          row-key="ITEMNO"
+        >
+          <template v-slot:top-left>
+            <q-btn
+              dense
+              color="primary"
+              :disabled="!selected.length"
+              label="Tellijst genereren"
+              @click="genList = true; listType = 'counted';"
+            />
+          </template>
+
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
+              <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
+              <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
+                <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
+                {{ props.row.QTY }}
+                <q-popup-edit
+                  v-model="props.row.QTY"
+                  buttons
+                  v-if="!props.row.UNIQUE"
+                  @save="(value, initialValue) => saveQTY(props.row.__index, value, initialValue)"
+                >
+                  <q-list>
+                    <q-item>
+                      <q-item-section>
+                        <q-btn
+                          round
+                          color="primary"
+                          icon="add"
+                          @click="incrementQty(props.row.__index)"
+                        />
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label
+                          style="text-align: center; padding-right: 10px;"
+                        >{{ props.row.QTY }}</q-item-label>
+                      </q-item-section>
+                      <q-item-section>
+                        <q-btn
+                          round
+                          color="primary"
+                          icon="remove"
+                          @click="decrementQty(props.row.__index)"
+                        />
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-popup-edit>
+              </q-td>
+              <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -203,14 +204,14 @@ export default {
       selectedPagination: {
         descending: false,
         page: 1,
-        rowsPerPage: 10
+        rowsPerPage: 25
       },
       pagination: {
         rowsNumber: 0,
         sortBy: "ITEMNO",
         descending: false,
         page: 1,
-        rowsPerPage: 10
+        rowsPerPage: 25
       },
       columns: [
         {
