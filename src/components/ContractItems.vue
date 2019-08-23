@@ -6,6 +6,7 @@
       :data="items"
       :columns="columns"
       :rows-per-page-options="[]"
+      :pagination.sync="pagination"
       row-key="RECID"
     />
   </div>
@@ -20,6 +21,9 @@ export default {
 
   data() {
     return {
+      pagination: {
+        rowsPerPage: 10
+      },
       items: [],
       memo: null,
       columns: [

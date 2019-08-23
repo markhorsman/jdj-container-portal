@@ -376,6 +376,7 @@ export default {
             CONTNO: contno,
             ITEMNO: item.ITEMNO,
             CONTITEM_RECORDER: item.RECORDER,
+            CONTITEM_RECID: item.RECID,
             CONTITEM_HIRED: item.HIRED,
             CONTITEM_QTYRETD: item.QTYRETD,
             QTY: (item.QTYOK + item.QTYDAM + item.QTYLOST),
