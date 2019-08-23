@@ -383,6 +383,7 @@ export default {
         setTimeout(() => {
           this.code = "";
           this.reading = false;
+          this.$parent.$parent.$parent.nextIsDisabled = false;
         }, 200);
       }
     },
