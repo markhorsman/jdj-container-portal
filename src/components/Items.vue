@@ -69,8 +69,11 @@
       </template>
       <template v-slot:top-right>
         <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken">
-          <template v-slot:append>
+          <template v-slot:prepend>
             <q-icon name="search" />
+          </template>
+          <template v-slot:append v-if="filter.length">
+            <q-icon name="close" @click="filter = ''" class="cursor-pointer" />
           </template>
         </q-input>
       </template>
@@ -88,9 +91,11 @@
             <q-popup-edit
               v-model="props.row.MEMO"
               buttons
+              @show="() => editMemo = props.row.__index"
+              @hide="() => editMemo = false"
               @save="(value, initialValue) => updateMemo(props.row.__index, value, initialValue)"
             >
-              <q-input v-model="props.row.MEMO" autofocus />
+              <q-input v-model="props.row.MEMO" autofocus readonly />
             </q-popup-edit>
           </q-td>
           <q-td key="QTY" :props="props">{{ props.row.QTY }}</q-td>
@@ -203,31 +208,41 @@ export default {
       readers: [],
       genList: false,
       chooseEmail: false,
-      emailaddress: this.$config.email.default_email
+      emailaddress: this.$config.email.default_email,
+      editMemo: false
     };
   },
 
-  mounted() {
+  async mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
 
     this.nfc = new NFC();
     this.readers = new Set();
 
-    this.nfc.on("reader", reader => {
+    this.nfc.on("reader", async reader => {
       this.readers.add(reader);
 
-      reader.on("card", card => {
+      reader.on("card", async card => {
         this.uid = card.uid
           .match(/.{1,2}/g)
           .reverse()
           .join("");
-        this.getCustomer();
+
+        const customer = await this.getCustomer();
+
+        if (!customer) return;
+
+        if (this.editMemo) {
+          this.tableData[this.editMemo].MEMO = `${customer.NAME} ${this.uid}`;
+        } else {
+          this.filter = customer.NAME;
+        }
       });
 
       reader.on("card.off", card => {
         this.uid = null;
-        this.filter = "";
+        // this.filter = "";
       });
 
       reader.on("error", err => {
@@ -289,26 +304,30 @@ export default {
       }
     },
 
-    getCustomer: function() {
+    async getCustomer() {
       this.loading = true;
-      this.$api
-        .get(
+      let customer;
+
+      let res;
+
+      try {
+        res = await this.$api.get(
           `${this.$config.container_api_base_url}customercontact/${this.uid}`,
           { auth: this.$config.container_api_basic_auth }
-        )
-        .then(res => {
-          if (res && res.data && res.data.data && res.data.data.length) {
-            this.filter = res.data.data[0].NAME;
-          } else {
-            this.notifyNotFound();
-          }
-        })
-        .catch(() => {
+        );
+
+        if (res && res.data && res.data.data && res.data.data.length) {
+          customer = res.data.data[0];
+        } else {
           this.notifyNotFound();
-        })
-        .finally(() => {
-          this.loading = false;
-        });
+        }
+      } catch (e) {
+        this.notifyNotFound();
+        log.error(e);
+      }
+
+      this.loading = false;
+      return customer;
     },
 
     onRequest(props) {
