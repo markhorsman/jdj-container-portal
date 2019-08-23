@@ -197,6 +197,7 @@ import storage from "electron-json-storage";
 import os from "os";
 import { eventHub } from "../eventhub";
 import log from "electron-log";
+import { setTimeout } from 'timers';
 const ioHook = require("iohook");
 
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
@@ -358,10 +359,17 @@ export default {
     },
 
     getInput: function(e) {
+      this.$parent.$parent.$parent.nextIsDisabled = true;
+
       if (e.keycode === 28 && this.code.length >= 5) {
         this.itemnumber = this.code.replace(/\s/g, "").toUpperCase();
         this.getProduct();
         this.code = "";
+
+        setTimeout(() => {
+          this.$parent.$parent.$parent.nextIsDisabled = false;
+        }, 100)
+        
       } else {
         const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
         if (typeof char !== "undefined" && char.length && char !== " ") {

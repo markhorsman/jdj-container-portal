@@ -65,7 +65,10 @@
           :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
           :isOffhire="rentalType === 'return'"
         />
-        <ContractItems v-if="rentalType === 'return' && this.$store.state.customer" :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"/>
+        <ContractItems
+          v-if="rentalType === 'return' && this.$store.state.customer"
+          :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"
+        />
       </q-step>
 
       <q-step
@@ -90,10 +93,11 @@
       <template v-slot:navigation>
         <q-stepper-navigation>
           <q-btn
+            ref="stepperNextBtn"
             @click="step === 4 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
             :label="step === 4 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts)"
+            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts) || nextIsDisabled"
           />
           <q-btn
             v-if="step > 1"
@@ -149,6 +153,7 @@ export default {
 
   data() {
     return {
+      nextIsDisabled: false,
       step: 1,
       rentalType: "pickup",
       confirmCancel: false,
@@ -379,7 +384,7 @@ export default {
             CONTITEM_RECID: item.RECID,
             CONTITEM_HIRED: item.HIRED,
             CONTITEM_QTYRETD: item.QTYRETD,
-            QTY: (item.QTYOK + item.QTYDAM + item.QTYLOST),
+            QTY: item.QTYOK + item.QTYDAM + item.QTYLOST,
             QTYOK: item.QTYOK,
             QTYDAM: item.QTYDAM,
             QTYLOST: item.QTYLOST,
@@ -529,7 +534,12 @@ export default {
 
         if (match) {
           products.push(
-            Object.assign(p, { RECID: match.RECID, RECORDER: match.RECORDER, HIRED: match.QTY, QTYRETD: match.QTYRETD })
+            Object.assign(p, {
+              RECID: match.RECID,
+              RECORDER: match.RECORDER,
+              HIRED: match.QTY,
+              QTYRETD: match.QTYRETD
+            })
           );
         }
       });
