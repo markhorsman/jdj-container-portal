@@ -21,7 +21,13 @@
       <p>Scan een of meerdere artikelen met een barcode scanner en klik op onderstaande knop om ze te verplaatsen van of naar het huidige depot.</p>
     </q-banner>
 
-    <q-table title="Artikelen verplaatsen" :data="products" :columns="columns" row-key="RECID">
+    <q-table
+      title="Artikelen verplaatsen"
+      :data="products"
+      :columns="columns"
+      row-key="RECID"
+      :pagination.sync="pagination"
+    >
       <template v-slot:top-left>
         <q-btn
           dense
@@ -33,7 +39,11 @@
       </template>
 
       <template v-slot:top-right>
-        <q-toggle @input="toggleDepot" v-model="to_current_depot" :label=" `Van ${source_depot} naar ${destination_depot}`" />
+        <q-toggle
+          @input="toggleDepot"
+          v-model="to_current_depot"
+          :label=" `Van ${source_depot} naar ${destination_depot}`"
+        />
       </template>
 
       <template v-slot:body="props">
@@ -91,12 +101,17 @@
 const ioHook = require("iohook");
 import log from "electron-log";
 import { findIndex } from "lodash";
+const throat = require("throat")(Promise);
 
 export default {
   name: "StockTransfer",
 
   data() {
     return {
+      pagination: {
+        rowsNumber: 0,
+        rowsPerPage: 100
+      },
       columns: [
         {
           name: "ITEMNO",
@@ -302,11 +317,10 @@ export default {
     async transfer() {
       let failed = 0,
         success = 0;
-      const transferItemRequests = this.products.map(async p => {
-        return await this.transferItem(p);
-      });
 
-      const results = await Promise.all(transferItemRequests);
+      const results = await Promise.all(
+        this.products.map(throat(10, p => this.transferItem(p)))
+      );
 
       results.forEach(r => {
         let body;

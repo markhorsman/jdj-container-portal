@@ -114,7 +114,7 @@
       row-key="ITEMNO"
       :loading="loading"
       :filter="filter"
-      :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100, 200, 300]"
+      :rows-per-page-options="[3, 5, 7, 10, 15, 25, 50, 100]"
       :pagination.sync="pagination"
       @request="onRequest"
     >
@@ -325,7 +325,7 @@ export default {
           this.pagination.descending = descending;
 
           const data = await Promise.all(
-            res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+            res.data.results.map(throat(10, p => this.getStockLevel(p.ITEMNO)))
           );
 
           data.forEach(r => {
