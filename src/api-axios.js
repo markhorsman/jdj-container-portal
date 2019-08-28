@@ -29,10 +29,12 @@ const setResponse = (conf, status = 200, statusText = "OK") => () => {
 
 instance.interceptors.request.use(
     conf => {
-        if (!conf.headers.skipLoader) {
+        if (!conf.headers.skipLoader && !store.state.loaderDisabled) {
             eventHub.$emit('before-request');
         } else {
-            delete conf.headers.skipLoader;
+            if (conf.headers && conf.headers.skipLoader) {
+                delete conf.headers.skipLoader;
+            }
         }
 
         if (conf.headers && conf.headers.skipCache || !store.state.offline) {
@@ -104,10 +106,16 @@ instance.interceptors.request.use(
 );
 
 instance.interceptors.response.use(function (response) {
-    eventHub.$emit('after-response');
+    if (!store.state.loaderDisabled) {
+        eventHub.$emit('after-response');
+    }
+
     return response;
 }, function (error) {
-    eventHub.$emit('response-error');
+    if (!store.state.loaderDisabled) {
+        eventHub.$emit('response-error');
+    }
+
     if (error.response &&
         error.response.status === 400 &&
         error.response.data &&

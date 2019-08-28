@@ -13,6 +13,7 @@ export default new Vuex.Store({
         rentalProducts: [],
         stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null),
         offline: false,
+        loaderDisabled: false,
     },
     
     mutations: {
@@ -46,6 +47,10 @@ export default new Vuex.Store({
 
         updateNetworkStatus(state, status) {
             state.offline = status;
+        },
+
+        updateLoaderState(state, disabled) {
+            state.loaderDisabled = disabled;
         }
     }
 })

@@ -257,13 +257,12 @@ export default {
     };
   },
 
-  mounted() {
+  async mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
 
-    this.getGroups();
-
-    this.onRequest({
+    await this.getGroups();
+    await this.onRequest({
       pagination: this.pagination,
       filter: undefined
     });
@@ -288,6 +287,9 @@ export default {
       let filter = props.filter;
       this.loading = true;
 
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
+
       // calculate starting row of data
       let startRow = (page - 1) * rowsPerPage;
 
@@ -302,45 +304,41 @@ export default {
           this.statusInRepair ? ` and STATUS eq 2` : ``
         }`;
 
-      eventHub.$emit("before-request");
+      let res;
 
-      this.$api
-        .get(
+      try {
+        res = await this.$api.get(
           `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        )
-        .then(async res => {
-          this.pagination.page = page;
-          this.pagination.rowsPerPage = rowsPerPage;
-          this.pagination.rowsNumber = res.data.totalCount;
-          this.pagination.sortBy = sortBy;
-          this.pagination.descending = descending;
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+        );
 
-          const data = await Promise.all(
-            res.data.results.map(throat(10, p => this.getStockLevel(p.ITEMNO)))
-          );
+        this.pagination.page = page;
+        this.pagination.rowsPerPage = rowsPerPage;
+        this.pagination.rowsNumber = res.data.totalCount;
+        this.pagination.sortBy = sortBy;
+        this.pagination.descending = descending;
 
-          data.forEach(r => {
-            const s = r.data[0];
-            const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
-            if (product) product.STKLEVEL = s.STKLEVEL;
-          });
+        const data = await Promise.all(
+          res.data.results.map(throat(10, p => this.getStockLevel(p.ITEMNO)))
+        );
 
-          this.tableData = res.data.results;
-        })
-        .catch(() => {})
-        .finally(() => {
-          this.loading = false;
-          eventHub.$emit("after-response");
+        data.forEach(r => {
+          const s = r.data[0];
+          const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
+          if (product) product.STKLEVEL = s.STKLEVEL;
         });
+
+        this.tableData = res.data.results;
+        this.loading = false;
+      } catch (e) {
+        log.error(e);
+      }
+
+      this.$store.commit("updateLoaderState", false);
+      eventHub.$emit("after-response");
     },
 
     async getStockLevel(itemno) {
@@ -348,12 +346,7 @@ export default {
 
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
         );
       } catch (e) {
         log.error(e);
@@ -363,61 +356,58 @@ export default {
       return result;
     },
 
-    getGroups: function() {
-      Promise.all([
-        this.$api.get(
-          `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        ),
-        this.$api.get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        )
-      ])
-        .then(res => {
-          this.groups.main = sortBy(
-            res[0].data.reduce((acc, grp) => {
-              acc.push({
-                label: `${grp.CODE} - ${grp.NAME}`,
-                value: grp.CODE
-              });
-              return acc;
-            }, []),
-            "label"
-          );
+    async getGroups() {
+      let res;
 
-          this.groups.sub = sortBy(
-            res[1].data.reduce((acc, grp) => {
-              acc.push({
-                label: `${grp.CODE} - ${grp.NAME}`,
-                value: grp.CODE,
-                pgroup: grp.PGROUP
-              });
-              return acc;
-            }, []),
-            "label"
-          );
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
 
-          this.groupOptions = this.groups.main;
-          this.subgroupOptions = this.groups.sub;
-        })
-        .catch(() => {});
+      try {
+        res = await Promise.all([
+          this.$api.get(
+            `${this.$config.api_base_url}productgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME`
+          ),
+          this.$api.get(
+            `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP`
+          )
+        ]);
+
+        this.groups.main = sortBy(
+          res[0].data.reduce((acc, grp) => {
+            acc.push({
+              label: `${grp.CODE} - ${grp.NAME}`,
+              value: grp.CODE
+            });
+            return acc;
+          }, []),
+          "label"
+        );
+
+        this.groups.sub = sortBy(
+          res[1].data.reduce((acc, grp) => {
+            acc.push({
+              label: `${grp.CODE} - ${grp.NAME}`,
+              value: grp.CODE,
+              pgroup: grp.PGROUP
+            });
+            return acc;
+          }, []),
+          "label"
+        );
+
+        this.groupOptions = this.groups.main;
+        this.subgroupOptions = this.groups.sub;
+      } catch (e) {
+        log.error(e);
+      }
     },
 
-    getInput: function(e) {
+    async getInput(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
         this.filter = this.code.replace(/\s/g, "").toUpperCase();
         this.code = "";
 
-        this.onRequest({
+        await this.onRequest({
           pagination: this.pagination,
           filter: this.filter
         });
