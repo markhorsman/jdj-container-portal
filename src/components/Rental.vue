@@ -127,6 +127,7 @@ import ReadProduct from "./ReadProduct.vue";
 import ContractItems from "./ContractItems.vue";
 
 import { eventHub } from "../eventhub";
+const throat = require("throat")(Promise);
 
 export default {
   name: "Rental",
@@ -293,12 +294,7 @@ export default {
       try {
         result = await this.$api.post(
           `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`,
-          item,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          item
         );
       } catch (e) {
         result = e;
@@ -312,13 +308,7 @@ export default {
         result = await this.$api.post(
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
-          )}/deliver?api_key=${this.$store.state.api_key}`,
-          {},
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          )}/deliver?api_key=${this.$store.state.api_key}`
         );
       } catch (e) {
         result = e;
@@ -350,12 +340,7 @@ export default {
           `${this.$config.api_base_url}contractitems/${encodeURIComponent(
             recid
           )}/offhire?api_key=${this.$store.state.api_key}`,
-          body,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          body
         );
       } catch (e) {
         result = e;
@@ -394,10 +379,7 @@ export default {
             DEPOT: this.$store.state.user.DEPOT
           },
           {
-            auth: this.$config.container_api_basic_auth,
-            headers: {
-              skipLoader: true
-            }
+            auth: this.$config.container_api_basic_auth
           }
         );
       } catch (e) {
@@ -410,12 +392,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`
         );
       } catch (e) {
         result = null;
@@ -428,13 +405,7 @@ export default {
 
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`,
-          {},
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`
         );
       } catch (e) {
         result = null;
@@ -506,6 +477,7 @@ export default {
       let failed = 0;
 
       eventHub.$emit("before-request");
+      this.$store.commit("updateLoaderState", true);
 
       const response = await this.getContractItems();
       const items = response.data;
@@ -546,17 +518,16 @@ export default {
 
       if (!products.length) {
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
         this.notify(
           `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`
         );
         return;
       }
 
-      const offhireContItemRequests = products.map(
-        async p => await this.offhireContractItem(p.RECID, p)
+      const contItemOffhireResults = await Promise.all(
+        products.map(throat(3, p => this.offhireContractItem(p.RECID, p)))
       );
-
-      const contItemOffhireResults = await Promise.all(offhireContItemRequests);
 
       contItemOffhireResults.forEach(r => {
         let body;
@@ -583,17 +554,19 @@ export default {
       // all failed
       if (failed && failed === products.length) {
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
         return;
       }
 
       failed = 0;
-      const offhireConfirmRequests = processed.map(
-        async p =>
-          await this.offhireConfirmItem(this.$config.default_contract_number, p)
-      );
 
-      // TODO: max x concurrent (throat)
-      const offhireConfirmResults = await Promise.all(offhireConfirmRequests);
+      const offhireConfirmResults = await Promise.all(
+        processed.map(
+          throat(3, p =>
+            this.offhireConfirmItem(this.$config.default_contract_number, p)
+          )
+        )
+      );
 
       offhireConfirmResults.forEach(r => {
         let body;
@@ -638,6 +611,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 
       this.step = 1;
@@ -665,11 +639,13 @@ export default {
       const d = moment().format("YYYY-MM-DD HH:mm:ss");
 
       eventHub.$emit("before-request");
+      this.$store.commit("updateLoaderState", true);
 
       const res = await this.getContract();
       const contract = res.data;
       if (!contract) {
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
 
         this.notify(
           `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`
@@ -681,6 +657,7 @@ export default {
       const m = moment(contract.ESTRETD);
       if (!m || !m.isValid()) {
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
 
         this.notify(
           `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`
@@ -691,22 +668,22 @@ export default {
 
       const estretd = m.format("YYYY-MM-DD HH:mm:ss");
 
-      const createContItemRequests = this.$store.state.rentalProducts.map(
-        async p => {
-          return await this.createContItemRequest({
-            Itemno: p.ITEMNO,
-            Qty: p.QTY,
-            Sellingprice: 0,
-            Istextitem: 0,
-            Memo: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`,
-            Deldate: d,
-            Hiredate: d,
-            Estretd: estretd
-          });
-        }
+      const contItemResults = await Promise.all(
+        this.$store.state.rentalProducts.map(
+          throat(3, p =>
+            this.createContItemRequest({
+              Itemno: p.ITEMNO,
+              Qty: p.QTY,
+              Sellingprice: 0,
+              Istextitem: 0,
+              Memo: `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`,
+              Deldate: d,
+              Hiredate: d,
+              Estretd: estretd
+            })
+          )
+        )
       );
-
-      const contItemResults = await Promise.all(createContItemRequests);
 
       contItemResults.forEach(r => {
         if (!r || r.status > 201) {
@@ -728,14 +705,13 @@ export default {
 
       if (failed && failed === contItemResults.length) {
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
         return;
       }
 
-      const deliverContItemRequests = products.map(
-        async recid => await this.deliverContractItem(recid)
+      const contItemDeliverResults = await Promise.all(
+        products.map(throat(3, recid => this.deliverContractItem(recid)))
       );
-
-      const contItemDeliverResults = await Promise.all(deliverContItemRequests);
 
       contItemDeliverResults.forEach(r => {
         let body, stock;
@@ -766,6 +742,7 @@ export default {
         });
 
         eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
         return;
       }
 
@@ -776,6 +753,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 
       const total = contItemDeliverResults.length - deliverFailed;

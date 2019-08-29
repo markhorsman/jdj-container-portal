@@ -7,6 +7,13 @@
           <span class="q-ml-sm">Wil je de artikelen mailen of printen?</span>
         </q-card-section>
 
+        <q-card-section>
+          <q-toggle
+            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen (max. ${this.exportMax})`"
+            v-model="exportWithFilter"
+          />
+        </q-card-section>
+
         <q-card-actions align="right">
           <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
           <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
@@ -209,7 +216,9 @@ export default {
       genList: false,
       chooseEmail: false,
       emailaddress: this.$config.email.default_email,
-      editMemo: false
+      editMemo: false,
+      exportWithFilter: true,
+      exportMax: 1000
     };
   },
 
@@ -242,7 +251,6 @@ export default {
 
       reader.on("card.off", card => {
         this.uid = null;
-        // this.filter = "";
       });
 
       reader.on("error", err => {
@@ -374,7 +382,34 @@ export default {
         .finally(() => (this.loading = false));
     },
 
-    print() {
+    async getAll() {
+      let res;
+
+      try {
+        res = await this.$api
+        .get(
+          `${this.$config.api_base_url}contracts/${
+            this.$config.default_contract_number
+          }/items?api_key=${
+            this.$store.state.api_key
+          }&$top=${this.exportMax}&$orderby=ITEMNO asc&$filter=STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
+        );
+      } catch (e) {
+        log.error(e);
+      }
+
+      return (res && res.data ? res.data : []);
+    },
+
+    async print() {
+      let data;
+
+      if (!this.exportWithFilter) {
+        data = await this.getAll();
+      } else {
+        data = this.tableData;
+      }
+
       const properties = [
         { field: "CONTNO", displayName: "Contractnummer" },
         { field: "ITEMNO", displayName: "Artikelnummer" },
@@ -385,15 +420,22 @@ export default {
       ];
 
       printJS({
-        printable: this.tableData,
+        printable: data,
         type: "json",
         properties,
         documentTitle: "Artikelen op contract"
       });
     },
 
-    email() {
-      const list = this.tableData;
+    async email() {
+      let list;
+
+      if (!this.exportWithFilter) {
+        list = await this.getAll();
+      } else {
+        list = this.tableData;
+      }
+
       this.chooseEmail = false;
       eventHub.$emit("before-request");
 

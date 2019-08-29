@@ -395,13 +395,13 @@ export default {
             return acc;
           }
         }, []);
-
-        this.loading = false;
-        this.$store.commit("updateLoaderState", false);
-        eventHub.$emit("after-response");
       } catch (e) {
         log.error(e);
       }
+
+      this.loading = false;
+      this.$store.commit("updateLoaderState", false);
+      eventHub.$emit("after-response");
     },
 
     async getStockLevel(itemno) {
