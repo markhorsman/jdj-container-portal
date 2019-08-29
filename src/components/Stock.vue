@@ -7,6 +7,13 @@
           <span class="q-ml-sm">Wil je de artikelen mailen of printen?</span>
         </q-card-section>
 
+        <q-card-section>
+          <q-toggle
+            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen (max. ${this.exportMax})`"
+            v-model="exportWithFilter"
+          />
+        </q-card-section>
+
         <q-card-actions align="right">
           <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
           <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
@@ -253,7 +260,9 @@ export default {
       reading: false,
       genList: false,
       chooseEmail: false,
-      emailaddress: this.$config.email.default_email
+      emailaddress: this.$config.email.default_email,
+      exportWithFilter: true,
+      exportMax: 1000
     };
   },
 
@@ -339,6 +348,40 @@ export default {
 
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
+    },
+
+    async getAll() {
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
+
+      let res;
+
+      try {
+        res = await this.$api.get(
+          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc
+          &$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+        );
+
+        const data = await Promise.all(
+          res.data.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+        );
+
+        data.forEach(r => {
+          const s = r.data[0];
+          const product = res.data.find(p => p.ITEMNO === s.ITEMNO);
+          if (product) product.STKLEVEL = s.STKLEVEL;
+        });
+
+        this.loading = false;
+      } catch (e) {
+        log.error(e);
+      }
+
+      if (res && res.data && res.data) {
+        return res.data;
+      } else {
+        return [];
+      }
     },
 
     async getStockLevel(itemno) {
@@ -460,23 +503,46 @@ export default {
       });
     },
 
-    print() {
+    async print() {
       const properties = [
         { field: "ITEMNO", displayName: "Artikelnummer" },
         { field: "DESC1", displayName: "Omschrijving 1" },
         { field: "STKLEVEL", displayName: "Aantal" }
       ];
 
-      printJS({
-        printable: this.tableData,
-        type: "json",
-        properties,
-        documentTitle: "Voorraad lijst"
-      });
+      let data;
+
+      if (!this.exportWithFilter) {
+        data = await this.getAll();
+      } else {
+        data = this.tableData;
+      }
+
+      eventHub.$emit("after-response");
+      this.$store.commit("updateLoaderState", false);
+
+      try {
+        printJS({
+          printable: data,
+          type: "json",
+          properties,
+          documentTitle: "Voorraad lijst",
+          onError: e => log.error(e)
+        });
+      } catch (e) {
+        log.error(e);
+      }
     },
 
-    email() {
-      const list = this.tableData;
+    async email() {
+      let list;
+
+      if (!this.exportWithFilter) {
+        list = await this.getAll();
+      } else {
+        list = this.tableData;
+      }
+
       this.chooseEmail = false;
       eventHub.$emit("before-request");
 
@@ -497,6 +563,7 @@ export default {
         })
         .finally(() => {
           eventHub.$emit("after-response");
+          this.$store.commit("updateLoaderState", false);
         });
     }
   },

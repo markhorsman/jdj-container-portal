@@ -196,6 +196,7 @@ import { emailStockCount } from "../mailer";
 import printJS from "print-js";
 const ioHook = require("iohook");
 const throat = require("throat")(Promise);
+import log from "electron-log";
 
 export default {
   data() {
@@ -304,13 +305,13 @@ export default {
     };
   },
 
-  mounted() {
+  async mounted() {
     this.$store.commit("saveStockCount", []);
 
     ioHook.on("keyup", this.getInput);
     ioHook.start();
 
-    this.getSubGroups();
+    await this.getSubGroups();
 
     this.onRequest({
       pagination: this.pagination,
@@ -335,7 +336,7 @@ export default {
         descending
       } = props.pagination;
       let filter = props.filter;
-      this.loading = true;
+      let res;
 
       // calculate starting row of data
       let startRow = (page - 1) * rowsPerPage;
@@ -347,63 +348,60 @@ export default {
         ${this.subgroup ? ` and GRPCODE eq '${this.subgroup.value}'` : ``}
         `;
 
+      this.loading = true;
+      this.$store.commit("updateLoaderState", true);
       eventHub.$emit("before-request");
 
-      return this.$api
-        .get(
+      try {
+        res = await this.$api.get(
           `${this.$config.api_base_url}stock?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
-          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        )
-        .then(async res => {
-          this.pagination.page = page;
-          this.pagination.rowsPerPage = rowsPerPage;
-          this.pagination.rowsNumber = res.data.totalCount;
-          this.pagination.sortBy = sortBy;
-          this.pagination.descending = descending;
+          }&$filter=${buildFilter()}&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
+        );
+        this.pagination.page = page;
+        this.pagination.rowsPerPage = rowsPerPage;
+        this.pagination.rowsNumber = res.data.totalCount;
+        this.pagination.sortBy = sortBy;
+        this.pagination.descending = descending;
 
-          const data = await Promise.all(
-            res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
-          );
+        const data = await Promise.all(
+          res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+        );
 
-          data.forEach(r => {
-            const s = r.data[0];
-            const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
-            if (product) product.STKLEVEL = s.STKLEVEL;
-          });
-
-          this.tableData = res.data.results.reduce((acc, p) => {
-            const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
-
-            if (!s) {
-              p.QTY = p.STKLEVEL;
-              acc.push(p);
-              return acc;
-            }
-
-            if (p.UNIQUE) {
-              return acc;
-            } else {
-              p.QTY = p.STKLEVEL - s.QTY;
-              if (!p.QTY) return acc;
-
-              acc.push(p);
-              return acc;
-            }
-          }, []);
-        })
-        .catch(() => {})
-        .finally(() => {
-          this.loading = false;
-          eventHub.$emit("after-response");
+        data.forEach(r => {
+          const s = r.data[0];
+          const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
+          if (product) product.STKLEVEL = s.STKLEVEL;
         });
+
+        this.tableData = res.data.results.reduce((acc, p) => {
+          const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
+
+          if (!s) {
+            p.QTY = p.STKLEVEL;
+            acc.push(p);
+            return acc;
+          }
+
+          if (p.UNIQUE) {
+            return acc;
+          } else {
+            p.QTY = p.STKLEVEL - s.QTY;
+            if (!p.QTY) return acc;
+
+            acc.push(p);
+            return acc;
+          }
+        }, []);
+
+        this.loading = false;
+        this.$store.commit("updateLoaderState", false);
+        eventHub.$emit("after-response");
+      } catch (e) {
+        log.error(e);
+      }
     },
 
     async getStockLevel(itemno) {
@@ -426,31 +424,32 @@ export default {
       return result;
     },
 
-    getSubGroups: function() {
-      this.$api
-        .get(
-          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP&$orderby=CODE asc`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        )
-        .then(res => {
-          this.subgroups = sortBy(
-            res.data.reduce((acc, grp) => {
-              acc.push({
-                label: `${grp.CODE} - ${grp.NAME}`,
-                value: grp.CODE
-              });
-              return acc;
-            }, []),
-            "label"
-          );
+    async getSubGroups() {
+      let res;
 
-          this.subgroupOptions = this.subgroups;
-        })
-        .catch(() => {});
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
+
+      try {
+        res = await this.$api.get(
+          `${this.$config.api_base_url}subgroups?api_key=${this.$store.state.api_key}&$orderby=CODE asc&fields=CODE,NAME,PGROUP&$orderby=CODE asc`
+        );
+
+        this.subgroups = sortBy(
+          res.data.reduce((acc, grp) => {
+            acc.push({
+              label: `${grp.CODE} - ${grp.NAME}`,
+              value: grp.CODE
+            });
+            return acc;
+          }, []),
+          "label"
+        );
+
+        this.subgroupOptions = this.subgroups;
+      } catch (e) {
+        log.error(e);
+      }
     },
 
     getProduct: function(itemnumber) {
