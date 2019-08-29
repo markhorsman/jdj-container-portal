@@ -371,17 +371,11 @@ export default {
           const product = res.data.find(p => p.ITEMNO === s.ITEMNO);
           if (product) product.STKLEVEL = s.STKLEVEL;
         });
-
-        this.loading = false;
       } catch (e) {
         log.error(e);
       }
 
-      if (res && res.data && res.data) {
-        return res.data;
-      } else {
-        return [];
-      }
+      return (res && res.data ? res.data : []);
     },
 
     async getStockLevel(itemno) {

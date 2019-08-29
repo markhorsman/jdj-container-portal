@@ -7,6 +7,13 @@
           <span class="q-ml-sm">Wil je de lijst mailen of printen?</span>
         </q-card-section>
 
+        <q-card-section v-if="listType === 'uncounted'">
+          <q-toggle
+            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen (max. ${this.exportMax})`"
+            v-model="exportWithFilter"
+          />
+        </q-card-section>
+
         <q-card-actions align="right">
           <q-btn flat label="Mailen" color="primary" icon="email" @click="chooseEmail = true" />
           <q-btn flat label="Printen" color="primary" icon="print" @click="print" />
@@ -301,7 +308,9 @@ export default {
       genList: false,
       listType: "counted",
       chooseEmail: false,
-      emailaddress: this.$config.email.default_email
+      emailaddress: this.$config.email.default_email,
+      exportWithFilter: true,
+      exportMax: 1000
     };
   },
 
@@ -402,6 +411,56 @@ export default {
       this.loading = false;
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
+    },
+
+    async getAll() {
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
+
+      let res,
+        data,
+        all = [];
+
+      try {
+        res = await this.$api.get(
+          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc
+          &$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+        );
+
+        data = await Promise.all(
+          res.data.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
+        );
+
+        data.forEach(r => {
+          const s = r.data[0];
+          const product = res.data.find(p => p.ITEMNO === s.ITEMNO);
+          if (product) product.STKLEVEL = s.STKLEVEL;
+        });
+
+        all = res.data.reduce((acc, p) => {
+          const s = this.selected.find(item => item.ITEMNO === p.ITEMNO);
+
+          if (!s) {
+            p.QTY = p.STKLEVEL;
+            acc.push(p);
+            return acc;
+          }
+
+          if (p.UNIQUE) {
+            return acc;
+          } else {
+            p.QTY = p.STKLEVEL - s.QTY;
+            if (!p.QTY) return acc;
+
+            acc.push(p);
+            return acc;
+          }
+        }, []);
+      } catch (e) {
+        log.error(e);
+      }
+
+      return all;
     },
 
     async getStockLevel(itemno) {
@@ -580,7 +639,15 @@ export default {
       });
     },
 
-    print() {
+    async print() {
+      let data;
+
+      if (!this.exportWithFilter && this.listType === "uncounted") {
+        data = await this.getAll();
+      } else {
+        data = this.listType === "counted" ? this.selected : this.tableData;
+      }
+
       const properties = [
         { field: "ITEMNO", displayName: "Artikelnummer" },
         { field: "PGROUP", displayName: "Productgroep" },
@@ -594,7 +661,7 @@ export default {
       }
 
       printJS({
-        printable: this.listType === "counted" ? this.selected : this.tableData,
+        printable: data,
         type: "json",
         properties,
         documentTitle:
@@ -602,6 +669,9 @@ export default {
             ? "Tellijst artikelen"
             : "Ongetelde artikelen"
       });
+
+      eventHub.$emit("after-response");
+      this.$store.commit("updateLoaderState", false);
     },
 
     clear() {
@@ -614,12 +684,20 @@ export default {
       });
     },
 
-    email() {
-      const list = this.listType === "counted" ? this.selected : this.tableData;
+    async email() {
+      let list;
+
+      if (!this.exportWithFilter && this.listType === "uncounted") {
+        list = await this.getAll();
+      } else {
+        list = this.listType === "counted" ? this.selected : this.tableData;
+      }
+
       const subject =
         this.listType === "counted"
           ? "Tellijst artikelen"
           : "Ongetelde artikelen";
+
       const intro =
         this.listType === "counted"
           ? "Hierbij ontvangt u een tellijst van artikelen"
@@ -645,6 +723,7 @@ export default {
         })
         .finally(() => {
           eventHub.$emit("after-response");
+          this.$store.commit("updateLoaderState", false);
         });
     }
   },
