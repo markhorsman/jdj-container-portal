@@ -200,6 +200,7 @@
 import { findIndex, clone, sortBy } from "lodash";
 import { eventHub } from "../eventhub";
 import { emailStockCount } from "../mailer";
+import { getStockLevelForProducts } from "../stock";
 import printJS from "print-js";
 const ioHook = require("iohook");
 const throat = require("throat")(Promise);
@@ -375,12 +376,9 @@ export default {
         this.pagination.sortBy = sortBy;
         this.pagination.descending = descending;
 
-        const data = await Promise.all(
-          res.data.results.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
-        );
-
-        data.forEach(r => {
-          const s = r.data[0];
+        const data = await getStockLevelForProducts(this.$store.state.api_key, this.$store.state.user.DEPOT, res.data.results.slice(0));
+ 
+        data.forEach(s => {
           const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
           if (product) product.STKLEVEL = s.STKLEVEL;
         });
@@ -427,12 +425,9 @@ export default {
           &$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
         );
 
-        data = await Promise.all(
-          res.data.map(throat(3, p => this.getStockLevel(p.ITEMNO)))
-        );
-
-        data.forEach(r => {
-          const s = r.data[0];
+        const data = await getStockLevelForProducts(this.$store.state.api_key, this.$store.state.user.DEPOT, res.data.slice(0));
+ 
+        data.forEach(s => {
           const product = res.data.find(p => p.ITEMNO === s.ITEMNO);
           if (product) product.STKLEVEL = s.STKLEVEL;
         });
@@ -461,26 +456,6 @@ export default {
       }
 
       return all;
-    },
-
-    async getStockLevel(itemno) {
-      let result;
-
-      try {
-        result = await this.$api.get(
-          `${this.$config.api_base_url}/stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`,
-          {
-            headers: {
-              skipLoader: true
-            }
-          }
-        );
-      } catch (e) {
-        log.error(e);
-        result = null;
-      }
-
-      return result;
     },
 
     async getSubGroups() {
