@@ -223,6 +223,11 @@ export default {
   },
 
   async mounted() {
+    await this.onRequest({
+      pagination: this.pagination,
+      filter: undefined
+    });
+
     ioHook.on("keyup", this.getInput);
     ioHook.start();
 
@@ -263,11 +268,6 @@ export default {
     });
 
     this.nfc.on("error", err => {});
-
-    this.onRequest({
-      pagination: this.pagination,
-      filter: undefined
-    });
   },
 
   computed: {
@@ -338,7 +338,7 @@ export default {
       return customer;
     },
 
-    onRequest(props) {
+    async onRequest(props) {
       let {
         page,
         rowsPerPage,
@@ -359,8 +359,10 @@ export default {
             : ``
         }`;
 
-      this.$api
-        .get(
+      let res;
+
+      try {
+        res = await this.$api.get(
           `${this.$config.api_base_url}contracts/${
             this.$config.default_contract_number
           }/items?api_key=${
@@ -368,37 +370,34 @@ export default {
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
           }&$filter=${buildFilter()}&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
-        )
-        .then(res => {
-          this.pagination.page = page;
-          this.pagination.rowsPerPage = rowsPerPage;
-          this.pagination.rowsNumber = res.data.totalCount;
-          this.pagination.sortBy = sortBy;
-          this.pagination.descending = descending;
+        );
 
-          this.tableData = res.data.results;
-        })
-        .catch(() => {})
-        .finally(() => (this.loading = false));
+        this.pagination.page = page;
+        this.pagination.rowsPerPage = rowsPerPage;
+        this.pagination.rowsNumber = res.data.totalCount;
+        this.pagination.sortBy = sortBy;
+        this.pagination.descending = descending;
+
+        this.tableData = res.data.results;
+      } catch (e) {
+        log.error(e);
+      }
+
+      this.loading = false;
     },
 
     async getAll() {
       let res;
 
       try {
-        res = await this.$api
-        .get(
-          `${this.$config.api_base_url}contracts/${
-            this.$config.default_contract_number
-          }/items?api_key=${
-            this.$store.state.api_key
-          }&$top=${this.exportMax}&$orderby=ITEMNO asc&$filter=STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
+        res = await this.$api.get(
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc&$filter=STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
         );
       } catch (e) {
         log.error(e);
       }
 
-      return (res && res.data ? res.data : []);
+      return res && res.data ? res.data : [];
     },
 
     async print() {
