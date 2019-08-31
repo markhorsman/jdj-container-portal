@@ -138,9 +138,19 @@
       </template>
 
       <template v-slot:top-right>
-        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken">
-          <template v-slot:append>
+        <q-input
+          borderless
+          dense
+          debounce="500"
+          v-model="filter"
+          placeholder="Zoeken"
+          ref="searchStock"
+        >
+          <template v-slot:prepend>
             <q-icon name="search" />
+          </template>
+          <template v-slot:append v-if="filter.length">
+            <q-icon name="close" @click="filter = ''" class="cursor-pointer" />
           </template>
         </q-input>
       </template>
@@ -364,7 +374,7 @@ export default {
         );
 
         res.data.forEach(p => {
-          if (typeof p.STKLEVEL === 'undefined') {
+          if (typeof p.STKLEVEL === "undefined") {
             p.STKLEVEL = p.STKLEVEL_OVERALL;
           }
         });
@@ -423,6 +433,11 @@ export default {
 
     async getInput(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
+        if (this.$refs.searchStock.focused) {
+          this.code = "";
+          return;
+        }
+
         this.filter = this.code.replace(/\s/g, "").toUpperCase();
         this.code = "";
 

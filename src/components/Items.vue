@@ -75,7 +75,7 @@
         />
       </template>
       <template v-slot:top-right>
-        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken">
+        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken" ref="searchContitems">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -288,6 +288,11 @@ export default {
 
     getInput: function(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
+        if (this.$refs.searchContitems.focused) {
+          this.code = "";
+          return;
+        }
+
         this.filter = this.code.replace(/\s/g, "").toUpperCase();
         this.code = "";
 

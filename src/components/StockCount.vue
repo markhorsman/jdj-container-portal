@@ -120,9 +120,13 @@
               debounce="500"
               v-model="filter"
               placeholder="Zoek op artikelnummer"
+              ref="searchStock"
             >
-              <template v-slot:append>
+              <template v-slot:prepend>
                 <q-icon name="search" />
+              </template>
+              <template v-slot:append v-if="filter.length">
+                <q-icon name="close" @click="filter = ''" class="cursor-pointer" />
               </template>
             </q-input>
           </template>
@@ -205,6 +209,7 @@ import printJS from "print-js";
 const ioHook = require("iohook");
 const throat = require("throat")(Promise);
 import log from "electron-log";
+import { setTimeout } from "timers";
 
 export default {
   data() {
@@ -375,8 +380,12 @@ export default {
         this.pagination.sortBy = sortBy;
         this.pagination.descending = descending;
 
-        const data = await getStockLevelForProducts(this.$store.state.api_key, this.$store.state.user.DEPOT, res.data.results.slice(0));
- 
+        const data = await getStockLevelForProducts(
+          this.$store.state.api_key,
+          this.$store.state.user.DEPOT,
+          res.data.results.slice(0)
+        );
+
         data.forEach(s => {
           const product = res.data.results.find(p => p.ITEMNO === s.ITEMNO);
           if (product) product.STKLEVEL = s.STKLEVEL;
@@ -425,7 +434,7 @@ export default {
         );
 
         res.data.forEach(p => {
-          if (typeof p.STKLEVEL === 'undefined') {
+          if (typeof p.STKLEVEL === "undefined") {
             p.STKLEVEL = p.STKLEVEL_OVERALL;
           }
         });
@@ -484,17 +493,25 @@ export default {
       }
     },
 
-    getProduct: function(itemnumber) {
-      return this.$api
-        .get(
+    async getProduct(itemnumber) {
+      let res;
+
+      try {
+        res = await this.$api.get(
           `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemnumber}' and STATUS eq 0&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL,UNIQUE`
-        )
-        .then(res => (res.data ? res.data[0] : null));
+        );
+      } catch (e) {}
+      return res.data ? res.data[0] : null;
     },
 
-    getInput: function(e) {
+    async getInput(e) {
       if (e.keycode === 28 && this.code.length >= 5) {
-        this.updateSelected(this.code.replace(/\s/g, "").toUpperCase());
+        // if (this.$refs.searchStock.focused) {
+        //   this.code = "";
+        //   return;
+        // }
+
+        await this.updateSelected(this.code.replace(/\s/g, "").toUpperCase());
         this.code = "";
       } else {
         const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
@@ -513,7 +530,7 @@ export default {
       }
     },
 
-    updateSelected(itemnumber) {
+    async updateSelected(itemnumber) {
       let s = this.selected.find(p => p.ITEMNO === itemnumber);
       let p = this.tableData.find(p => p.ITEMNO === itemnumber);
 
@@ -552,20 +569,19 @@ export default {
         return;
       }
 
-      this.getProduct(itemnumber).then(p => {
-        if (!p) {
-          this.$q.notify({
-            color: "red-5",
-            icon: "fas fa-exclamation-triangle",
-            message: `Artikel met nummer (${itemnumber}) niet gevonden`
-          });
-          return;
-        }
+      p = await this.getProduct(itemnumber);
+      if (!p) {
+        this.$q.notify({
+          color: "red-5",
+          icon: "fas fa-exclamation-triangle",
+          message: `Artikel met nummer (${itemnumber}) niet gevonden`
+        });
+        return;
+      }
 
-        p.QTY = p.STKLEVEL;
-        this.selected.push(p);
-        this.$store.commit("saveStockCount", this.selected);
-      });
+      p.QTY = p.STKLEVEL;
+      this.selected.push(p);
+      this.$store.commit("saveStockCount", this.selected);
     },
 
     incrementQty: function(index) {
