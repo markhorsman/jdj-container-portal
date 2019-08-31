@@ -9,7 +9,7 @@
 
         <q-card-section v-if="listType === 'uncounted'">
           <q-toggle
-            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen (max. ${this.exportMax})`"
+            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen`"
             v-model="exportWithFilter"
           />
         </q-card-section>
@@ -310,8 +310,7 @@ export default {
       listType: "counted",
       chooseEmail: false,
       emailaddress: this.$config.email.default_email,
-      exportWithFilter: true,
-      exportMax: 1000
+      exportWithFilter: true
     };
   },
 
@@ -421,15 +420,14 @@ export default {
 
       try {
         res = await this.$api.get(
-          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc
-          &$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=PGROUP,GRPCODE,ITEMNO,DESC1,DESC2,DESC3,STATUS,STKLEVEL`
+          `${this.$config.container_api_base_url}stock/${this.$store.state.user.DEPOT}`,
+          { auth: this.$config.container_api_basic_auth }
         );
 
-        const data = await getStockLevelForProducts(this.$store.state.api_key, this.$store.state.user.DEPOT, res.data.slice(0));
- 
-        data.forEach(s => {
-          const product = res.data.find(p => p.ITEMNO === s.ITEMNO);
-          if (product) product.STKLEVEL = s.STKLEVEL;
+        res.data.forEach(p => {
+          if (typeof p.STKLEVEL === 'undefined') {
+            p.STKLEVEL = p.STKLEVEL_OVERALL;
+          }
         });
 
         all = res.data.reduce((acc, p) => {

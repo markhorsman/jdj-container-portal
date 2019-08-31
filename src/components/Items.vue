@@ -9,7 +9,7 @@
 
         <q-card-section>
           <q-toggle
-            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen (max. ${this.exportMax})`"
+            :label="exportWithFilter ? 'Alleen gefilterde artikelen' : `Alle artikelen`"
             v-model="exportWithFilter"
           />
         </q-card-section>
@@ -218,7 +218,7 @@ export default {
       emailaddress: this.$config.email.default_email,
       editMemo: false,
       exportWithFilter: true,
-      exportMax: 1000
+      exportMax: 2000
     };
   },
 
