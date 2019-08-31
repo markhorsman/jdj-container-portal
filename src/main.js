@@ -41,10 +41,7 @@ export default new Vue({
     cacheTime: 15 * 60 * 1000,
     cache: {
       stock: {
-        top: 100,
-        concurrency: 3,
-        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT', 'UNIQUE'],
-        total: 0
+        fields: ['RECID', 'PGROUP', 'GRPCODE', 'ITEMNO', 'DESC1', 'DESC2', 'DESC3', 'STATUS', 'STKLEVEL', 'CURRDEPOT', 'UNIQUE']
       },
       contitems: {
         top: 100,
@@ -115,26 +112,8 @@ export default new Vue({
         !this.$store.state.user.DEPOT
       ) return [];
 
-      let stock = []
-      const list = [];
-
-      this.cache.stock.total = await this.getStockTotal();
-
-      if (!this.cache.stock.total) return [];
-
       storage.setDataPath(`${os.tmpdir()}/insphire/stock/${this.$store.state.user.DEPOT}`);
-
-      const iterations = Math.ceil(this.cache.stock.total / this.cache.stock.top);
-      const max = this.cache.stock.top;
-      for (let i = 0; i < iterations; i++) {
-        list.push(i * max);
-      }
-
-      const data = await Promise.all(list.map(throat(this.cache.stock.concurrency, skip => this.getStockItems(max, skip))));
-      stock = data.reduce((acc, a) => {
-        acc.push.apply(acc, a);
-        return acc;
-      }, [])
+      const stock = await this.getStockItems();
 
       try {
         await this.setStorage('stock_all', stock);
@@ -191,10 +170,9 @@ export default new Vue({
       }
     },
 
-    async getStockItems(top = 100, skip = 0) {
+    async getStockItems() {
       if (
         this.isOffline ||
-        !this.$store.state.api_key ||
         !this.$store.state.user ||
         !this.$store.state.user.DEPOT
       ) {
@@ -203,18 +181,22 @@ export default new Vue({
 
       let res;
       try {
-        res = await this.$api
-          .get(
-            `${this.$config.api_base_url}stock?api_key=${
-            this.$store.state.api_key
-            }&$top=${top}&$skip=${skip}&$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'&fields=${this.cache.stock.fields.join(',')}`,
-            {
-              headers: {
-                skipLoader: true,
-                skipCache: true
-              }
+        res = await this.$api.get(
+          `${this.$config.container_api_base_url}stock/${this.$store.state.user.DEPOT}`,
+          {
+            auth: this.$config.container_api_basic_auth,
+            headers: {
+              skipLoader: true,
+              skipCache: true
             }
-          );
+          }
+        );
+
+        res.data.forEach(p => {
+          if (typeof p.STKLEVEL === 'undefined') {
+            p.STKLEVEL = p.STKLEVEL_OVERALL;
+          }
+        });
       } catch (e) {
         log.error(e);
       }
@@ -224,7 +206,9 @@ export default new Vue({
       res.data.forEach(async item => {
         try {
           if (item.ITEMNO) {
-            await this.setStorage(item.ITEMNO, item);
+            setTimeout(async () => {
+              await this.setStorage(item.ITEMNO, item);
+            }, 1)
           }
         } catch (e) {
           log.error(e);
@@ -232,39 +216,6 @@ export default new Vue({
       });
 
       return res.data;
-    },
-
-    async getStockTotal() {
-      if (
-        this.isOffline ||
-        !this.$store.state.api_key ||
-        !this.$store.state.user ||
-        !this.$store.state.user.DEPOT
-      ) {
-        return Promise.resolve(0);
-      }
-
-      let res;
-      try {
-        res = await this.$api
-          .get(
-            `${this.$config.api_base_url}stock?api_key=${
-            this.$store.state.api_key
-            }&$top=1&$skip=0&$inlinecount=allpages&$filter=CURRDEPOT eq '${this.$store.state.user.DEPOT}'`,
-            {
-              headers: {
-                skipLoader: true,
-                skipCache: true
-              }
-            }
-          );
-      } catch (e) {
-        log.error(e);
-      }
-
-      if (!res || !res.data) return 0;
-
-      return res.data.totalCount;
     },
 
     async getCustomerContacts() {
