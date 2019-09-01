@@ -178,7 +178,7 @@
             />
           </q-td>
 
-          <!-- <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td> -->
+          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
           <q-td key="DELETE" :props="props">
             <q-icon
               name="delete"
@@ -197,7 +197,7 @@ import storage from "electron-json-storage";
 import os from "os";
 import { eventHub } from "../eventhub";
 import log from "electron-log";
-import { setTimeout } from 'timers';
+import { setTimeout } from "timers";
 const ioHook = require("iohook");
 
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
@@ -269,15 +269,15 @@ export default {
           sortable: true,
           type: "rentalReturn"
         },
-        // {
-        //   name: "STKLEVEL",
-        //   required: true,
-        //   label: "Voorraad",
-        //   align: "left",
-        //   field: row => row.STKLEVEL,
-        //   format: val => `${val}`,
-        //   sortable: true
-        // },
+        {
+          name: "STKLEVEL",
+          required: true,
+          label: "Voorraad",
+          align: "left",
+          field: row => row.STKLEVEL,
+          format: val => `${val}`,
+          sortable: true
+        },
         {
           name: "DELETE",
           required: true,
@@ -368,8 +368,7 @@ export default {
 
         setTimeout(() => {
           this.$parent.$parent.$parent.nextIsDisabled = false;
-        }, 100)
-        
+        }, 100);
       } else {
         const char = String.fromCharCode(e.rawcode).replace(/[^0-9a-z]/gi, "");
         if (typeof char !== "undefined" && char.length && char !== " ") {
@@ -396,11 +395,34 @@ export default {
       });
     },
 
-    addProduct(found) {
+    async addProduct(found) {
+      if (!this.$store.state.offline) {
+        let result;
+
+        try {
+          result = await this.$api.get(
+            `${
+              this.$config.api_base_url
+            }stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
+          );
+        } catch (e) {
+          log.error(e);
+          result = null;
+        }
+
+        if (result && result.data && result.data.length) {
+          found.STKLEVEL = result.data[0].STKLEVEL;
+        }
+      }
+
       const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
 
       if (p && !p.UNIQUE) {
-        p.QTY = parseInt(p.QTY) + 1;
+        if (this.$parent.$parent.$parent.rentalType === "return") {
+          p.QTYOK = parseInt(p.QTYOK) + 1;
+        } else {
+          p.QTY = parseInt(p.QTY) + 1;
+        }
       } else if (p && p.UNIQUE) {
         // notify?
       } else {
