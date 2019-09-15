@@ -255,38 +255,65 @@ export default {
       });
     },
 
-    getProduct() {
-      this.$api
-        .get(
-          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL,STATUS,CURRDEPOT`
-        )
-        .then(res => {
-          if (res && res.data && res.data.length) {
-            const p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO);
+    async getProduct() {
+      let res;
+      let p;
 
-            if (p && !p.UNIQUE) {
-              p.QTY = parseInt(p.QTY) + 1;
-            } else if (p && p.UNIQUE) {
-              // notify?
-            } else {
-              this.products.push(
-                Object.assign(res.data[0], {
-                  QTY: 1,
-                  DESTINATION_STKDEPOT_RECID: null,
-                  CURRENT_DEPOT_STKLEVEL: 0,
-                  SOURCE_STKDEPOT_RECID: null,
-                  MAIN_DEPOT_STKLEVEL: 0
-                })
-              );
-            }
-            this.getStockDepots();
+      try {
+        res = await this.$api.get(
+          `${this.$config.api_base_url}/stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${this.itemnumber}'&fields=RECID,ITEMNO,DESC1,DESC2,DESC3,UNIQUE,STKLEVEL,STATUS,CURRDEPOT`
+        );
+
+        if (res && res.data && res.data.length) {
+          p = this.products.find(p => p.ITEMNO === res.data[0].ITEMNO);
+
+          if (p && !p.UNIQUE) {
+            p.QTY = parseInt(p.QTY) + 1;
+          } else if (p && p.UNIQUE) {
+            // notify?
           } else {
-            this.notifyNotFound();
+            p = Object.assign(res.data[0], {
+                QTY: 1,
+                DESTINATION_STKDEPOT_RECID: null,
+                CURRENT_DEPOT_STKLEVEL: 0,
+                SOURCE_STKDEPOT_RECID: null,
+                MAIN_DEPOT_STKLEVEL: 0
+              });
+            this.products.push(p);
           }
-        })
-        .catch(() => {
+
+          await this.getStockDepots();
+
+          if (p.UNIQUE && p.CURRENT_DEPOT_STKLEVEL && this.to_current_depot) {
+            this.$q.notify({
+              color: "red-5",
+              icon: "fas fa-exclamation-triangle",
+              message: `Uniek artikel met nummer ${this.itemnumber} staat al in ${this.$store.state.user.DEPOT}.`
+            });
+
+            const index = findIndex(this.products, { ITEMNO: p.ITEMNO });
+            if (typeof index !== 'undefined') this.products.splice(index, 1);
+          } else if (
+            p.UNIQUE &&
+            p.MAIN_DEPOT_STKLEVEL &&
+            !this.to_current_depot
+          ) {
+            this.$q.notify({
+              color: "red-5",
+              icon: "fas fa-exclamation-triangle",
+              message: `Uniek artikel met nummer ${this.itemnumber} staat al in ${this.$config.main_depot}.`
+            });
+
+            const index = findIndex(this.products, { ITEMNO: p.ITEMNO });
+            if (typeof index !== 'undefined') this.products.splice(index, 1);
+          }
+        } else {
           this.notifyNotFound();
-        });
+        }
+      } catch (e) {
+        this.log.error(e);
+        this.notifyNotFound();
+      }
     },
 
     async transferItem(item) {
