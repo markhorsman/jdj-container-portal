@@ -689,7 +689,7 @@ export default {
         if (!r || r.status > 201) {
           failed++;
           if (r.data && r.data.Message) {
-            const body = JSON.parse(r.config.data);
+            // const body = JSON.parse(r.config.data);
             this.notify(r.data.Message);
           }
         } else {
@@ -717,10 +717,14 @@ export default {
         let body, stock;
 
         if (r.config.data) {
-          body = JSON.parse(r.config.data);
-          stock = this.$store.state.rentalProducts.find(
-            p => p.RECID === body.RECID
-          );
+          try {
+            body = JSON.parse(r.config.data);
+            stock = this.$store.state.rentalProducts.find(
+              p => p.RECID === body.RECID
+            );
+          } catch (e) {
+            console.log(e);
+          }
         }
 
         if (!r || r.status > 201) {

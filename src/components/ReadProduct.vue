@@ -311,6 +311,15 @@ export default {
 
   methods: {
     incrementQty: function(index, prop) {
+      if (prop === 'QTY' && parseInt(this.products[index].STKLEVEL) < (parseInt(this.products[index].QTY) + 1)) {
+        this.$q.notify({
+          color: "red-5",
+          icon: "fas fa-exclamation-triangle",
+          message: `Product met nummer ${this.products[index].ITEMNO} heeft onvoldoende voorraad.`
+        });
+        return;
+      }
+
       this.products[index][prop]++;
       this.$store.commit("updateRentalProducts", this.products);
     },
@@ -421,19 +430,35 @@ export default {
         if (this.$parent.$parent.$parent.rentalType === "return") {
           p.QTYOK = parseInt(p.QTYOK) + 1;
         } else {
-          p.QTY = parseInt(p.QTY) + 1;
+          if (parseInt(p.STKLEVEL) >= (parseInt(p.QTY) + 1)) {
+            p.QTY = parseInt(p.QTY) + 1;
+          } else {
+             this.$q.notify({
+              color: "red-5",
+              icon: "fas fa-exclamation-triangle",
+              message: `Product met nummer ${p.ITEMNO} heeft onvoldoende voorraad.`
+            });
+          }
         }
       } else if (p && p.UNIQUE) {
         // notify?
       } else {
-        this.products.push(
-          Object.assign(found, {
-            QTY: 1,
-            QTYDAM: 0,
-            QTYLOST: 0,
-            QTYOK: 1
-          })
-        );
+        if (found.STKLEVEL > 0) {
+          this.products.push(
+            Object.assign(found, {
+              QTY: 1,
+              QTYDAM: 0,
+              QTYLOST: 0,
+              QTYOK: 1
+            })
+          );
+        } else {
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Product met nummer ${found.ITEMNO} heeft onvoldoende voorraad.`
+          });
+        }
       }
       this.$store.commit("updateRentalProducts", this.products);
     },
