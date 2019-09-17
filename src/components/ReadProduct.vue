@@ -443,7 +443,7 @@ export default {
       } else if (p && p.UNIQUE) {
         // notify?
       } else {
-        if (found.STKLEVEL > 0) {
+        if (this.$parent.$parent.$parent.rentalType === "return" || found.STKLEVEL > 0) {
           this.products.push(
             Object.assign(found, {
               QTY: 1,
