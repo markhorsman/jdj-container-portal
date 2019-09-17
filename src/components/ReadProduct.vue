@@ -198,6 +198,7 @@ import os from "os";
 import { eventHub } from "../eventhub";
 import log from "electron-log";
 import { setTimeout } from "timers";
+import { findIndex } from "lodash";
 const ioHook = require("iohook");
 
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
@@ -318,6 +319,9 @@ export default {
           message: `Product met nummer ${this.products[index].ITEMNO} heeft onvoldoende voorraad.`
         });
         return;
+      } else if (prop !== 'QTY') {
+        eventHub.$emit("offhire-check-qty", { product: this.products[index], prop, index });
+        return;
       }
 
       this.products[index][prop]++;
@@ -327,6 +331,11 @@ export default {
     decrementQty: function(index, prop) {
       if (this.products[index][prop] === 1) return;
       this.products[index][[prop]]--;
+      this.$store.commit("updateRentalProducts", this.products);
+    },
+
+    incrementOffhireProduct: function(data) {
+      this.products[data.index][data.prop]++;
       this.$store.commit("updateRentalProducts", this.products);
     },
 
@@ -428,7 +437,7 @@ export default {
 
       if (p && !p.UNIQUE) {
         if (this.$parent.$parent.$parent.rentalType === "return") {
-          p.QTYOK = parseInt(p.QTYOK) + 1;
+          eventHub.$emit("offhire-check-qty", { product: p, prop: 'QTYOK', index: findIndex(this.products, { ITEMNO: p.ITEMNO }) });
         } else {
           if (parseInt(p.STKLEVEL) >= (parseInt(p.QTY) + 1)) {
             p.QTY = parseInt(p.QTY) + 1;
@@ -492,10 +501,12 @@ export default {
 
   created() {
     eventHub.$on("add-product", this.addProduct);
+    eventHub.$on("increment-offhire-product", this.incrementOffhireProduct);
   },
 
   beforeDestroy() {
     eventHub.$off("add-product", this.addProduct);
+    eventHub.$off("increment-offhire-product", this.incrementOffhireProduct);
   },
 
   destroyed() {

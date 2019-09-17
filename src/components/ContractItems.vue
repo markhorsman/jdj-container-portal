@@ -107,15 +107,37 @@ export default {
       } else {
         eventHub.$emit("add-product", stockItem);
       }
+    },
+
+    checkQty(data) {
+      const item = this.items.find(item => item.ITEMNO === data.product.ITEMNO);
+      
+      if (!item) return;
+
+      const inrent = parseInt(item.QTY) - parseInt(item.QTYRETD);
+
+      if ((parseInt(data.product.QTYOK) + parseInt(data.product.QTYDAM) + parseInt(data.product.QTYLOST) + 1) > inrent) {
+        this.$q.notify({
+          color: "red-5",
+          icon: "fas fa-exclamation-triangle",
+          message: `Het ingestelde aantal van het artikel met nummer ${data.product.ITEMNO} is hoger dan het aantal momenteel in huur.`
+        });
+
+        return;
+      }
+
+      eventHub.$emit("increment-offhire-product", data);
     }
   },
 
   created() {
     eventHub.$on("offhire-check-contitem", this.checkContItem);
+    eventHub.$on("offhire-check-qty", this.checkQty);
   },
 
   beforeDestroy() {
     eventHub.$off("offhire-check-contitem", this.checkContItem);
+    eventHub.$off("offhire-check-qty", this.checkQty);
   }
 };
 </script>
