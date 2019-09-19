@@ -688,8 +688,7 @@ export default {
       contItemResults.forEach(r => {
         if (!r || r.status > 201) {
           failed++;
-          if (r.data && r.data.Message) {
-            // const body = JSON.parse(r.config.data);
+          if (r && r.data && r.data.Message) {
             this.notify(r.data.Message);
           }
         } else {
