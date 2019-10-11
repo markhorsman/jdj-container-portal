@@ -87,7 +87,7 @@ export default {
     getItems: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
+          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
         )
         .then(res => {
           if (res && res.data && res.data.length) {
@@ -110,13 +110,30 @@ export default {
     },
 
     checkQty(data) {
-      const item = this.items.find(item => item.ITEMNO === data.product.ITEMNO);
-      
+      let item;
+
+      if (data.product.UNIQUE) {
+        item = this.items.find(obj => obj.ITEMNO === data.product.ITEMNO);
+      } else {
+        match = this.items.find(
+          obj =>
+            obj.ITEMNO === data.product.ITEMNO &&
+            obj.MEMO ===
+              `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
+        );
+      }
+
       if (!item) return;
 
       const inrent = parseInt(item.QTY) - parseInt(item.QTYRETD);
 
-      if ((parseInt(data.product.QTYOK) + parseInt(data.product.QTYDAM) + parseInt(data.product.QTYLOST) + 1) > inrent) {
+      if (
+        parseInt(data.product.QTYOK) +
+          parseInt(data.product.QTYDAM) +
+          parseInt(data.product.QTYLOST) +
+          1 >
+        inrent
+      ) {
         this.$q.notify({
           color: "red-5",
           icon: "fas fa-exclamation-triangle",
