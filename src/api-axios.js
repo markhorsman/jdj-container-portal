@@ -7,7 +7,7 @@ import getContItems from './axios-cache/contItem'
 import getFAQ from './axios-cache/faq'
 
 const instance = axios.create({
-    timeout: 30000
+    timeout: 60000
 });
 
 
