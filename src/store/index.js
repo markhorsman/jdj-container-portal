@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import router from '../router'
+import config from '../../config'
 
 Vue.use(Vuex)
 
@@ -14,8 +15,9 @@ export default new Vuex.Store({
         stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null),
         offline: false,
         loaderDisabled: false,
+        settings: (localStorage.getItem('settings') ? JSON.parse(localStorage.getItem('settings')) : { contract: { static: true, number: config.default_contract_number } }),
     },
-    
+
     mutations: {
         login(state, data) {
             state.user = data
@@ -51,6 +53,11 @@ export default new Vuex.Store({
 
         updateLoaderState(state, disabled) {
             state.loaderDisabled = disabled;
-        }
+        },
+
+        updateSettings(state, settings) {
+            state.settings = settings;
+            localStorage.setItem('settings', JSON.stringify(state.settings));
+        },
     }
 })

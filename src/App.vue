@@ -91,11 +91,7 @@
           />
 
           <q-toolbar-title class="pull-right">
-            <img
-              alt="J de Jonge"
-              width="200"
-              src="../public/logo.png"
-            />
+            <img alt="J de Jonge" width="200" src="../public/logo.png" />
           </q-toolbar-title>
           <div>
             <span>{{ networkStatus }}</span>
@@ -150,6 +146,15 @@
               <q-item-section>
                 <q-item-label>Voorraad</q-item-label>
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable tag="a" to="/settings" v-if="!userInAPIGroup && isOnline">
+              <q-item-section avatar>
+                <q-icon name="fas fa-cog" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Instellingen</q-item-label>
+                <q-item-label caption>Vast contract instellen</q-item-label>
               </q-item-section>
             </q-item>
             <q-item clickable tag="a" to="/stocktransfer" v-if="!userInAPIGroup && isOnline">
@@ -216,7 +221,7 @@
 </template>
 <script>
 import { eventHub } from "./eventhub";
-import { AppFullscreen } from 'quasar'
+import { AppFullscreen } from "quasar";
 const { remote } = require("electron");
 const win = remote.getCurrentWindow();
 

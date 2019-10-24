@@ -11,6 +11,7 @@ import Stock from '../components/Stock.vue'
 import StockCount from '../components/StockCount.vue'
 import CustomerContact from '../components/CustomerContact.vue'
 import StockTransfer from '../components/StockTransfer.vue'
+import Settings from '../components/Settings.vue'
 
 const routes = [
   {
@@ -60,6 +61,15 @@ const routes = [
     }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: {
+      requiresAuth: true,
+      isAdmin: true
+    }
+  },
+  {
     path: '/stocktransfer',
     name: 'StockTransfer',
     component: StockTransfer,
@@ -101,14 +111,14 @@ router.beforeEach((to, from, next) => {
       })
     } else {
       let user = JSON.parse(localStorage.getItem('user'))
-      
+
       if (to.matched.some(record => !record.meta.isAdmin)) {
         if (!user.GRPCODE || user.GRPCODE === 'API') {
           next()
         } else {
           next({ name: 'Home' })
         }
-          
+
       } else {
         next()
       }
