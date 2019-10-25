@@ -11,6 +11,7 @@ import './quasar'
 import axios from './api-axios'
 import config from '../config'
 import store from './store'
+import { getAllContracts } from "./contracts";
 import storage from 'electron-json-storage'
 import os from 'os'
 import log from 'electron-log'
@@ -74,6 +75,7 @@ export default new Vue({
       await this.buildContItemCache();
       await this.buildStockCache();
       await this.buildCustomerContactCache();
+      await this.buildContractsCache();
     },
 
     async cacheFAQItems() {
@@ -137,7 +139,8 @@ export default new Vue({
 
       if (!this.cache.contitems.total) return;
 
-      storage.setDataPath(`${os.tmpdir()}/insphire/contitems/${this.$config.default_contract_number}`);
+      const contractNumber = this.$store.state.settings.contract.number || this.$config.default_contract_number;
+      storage.setDataPath(`${os.tmpdir()}/insphire/contitems/${contractNumber}`);
 
       const iterations = Math.ceil(this.cache.contitems.total / this.cache.contitems.top);
       const max = this.cache.contitems.top;
@@ -165,6 +168,25 @@ export default new Vue({
       try {
         await this.setStorage('customercontact_all', customerContacts);
         log.info(`${customerContacts.length} customercontact records saved to disk`);
+      } catch (e) {
+        log.error(e);
+      }
+    },
+
+    async buildContractsCache() {
+      if (this.isOffline ||
+        !this.$store.state.api_key ||
+        !this.$store.state.user ||
+        !this.$store.state.user.DEPOT
+      ) return [];
+
+      storage.setDataPath(`${os.tmpdir()}/insphire/contracts`);
+
+      const items = await getAllContracts();
+
+      try {
+        await this.setStorage('contracts_all', items);
+        log.info(`${items.length} contract records saved to disk`);
       } catch (e) {
         log.error(e);
       }
@@ -267,12 +289,13 @@ export default new Vue({
       }
 
       let res;
+      const contractNumber = this.$store.state.settings.contract.number || this.$config.default_contract_number;
 
       try {
         res = await this.$api
           .get(
             `${this.$config.api_base_url}contracts/${
-            this.$config.default_contract_number
+            contractNumber
             }/items?api_key=${
             this.$store.state.api_key
             }&$top=${top}&$skip=${skip}&fields=${this.cache.contitems.fields.join(',')}`
@@ -304,11 +327,13 @@ export default new Vue({
       }
 
       let res;
+      const contractNumber = this.$store.state.settings.contract.number || this.$config.default_contract_number;
+
       try {
         res = await this.$api
           .get(
             `${this.$config.api_base_url}contracts/${
-            this.$config.default_contract_number
+            contractNumber
             }/items?api_key=${
             this.$store.state.api_key
             }&$top=1&$skip=0&$inlinecount=allpages&fields=RECID,ITEMNO`

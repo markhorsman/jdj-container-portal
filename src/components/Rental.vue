@@ -31,7 +31,7 @@
         </div>
       </q-step>
 
-      <q-step :name="2" title="Contract kiezen" icon="scroll" :done="step > 2">
+      <q-step :name="2" title="Contract kiezen" icon="fas fa-scroll" :done="step > 2">
         <ChooseContract />
       </q-step>
 
@@ -282,8 +282,9 @@ export default {
       this.products = queueItem.products;
       this.$store.commit("updateRentalProducts", queueItem.products);
       this.$store.commit("updateCustomer", queueItem.customer);
+      this.$store.commit("updateContract", queueItem.contract);
       this.rentalType = queueItem.type === "hire" ? "pickup" : "return";
-      this.step = 4;
+      this.step = 5;
     },
 
     cancel: function() {
@@ -444,7 +445,8 @@ export default {
       rentalQueue.push({
         type,
         products: this.$store.state.rentalProducts,
-        customer: this.$store.state.customer
+        customer: this.$store.state.customer,
+        contract: this.$store.state.contract
       });
       this.$offlineStorage.set("rental_queue", rentalQueue);
       this.rentalQueue = rentalQueue;
@@ -771,6 +773,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      this.$store.commit("updateContract", null);
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 

@@ -2,14 +2,11 @@ import storage from 'electron-json-storage'
 import os from 'os'
 import parser from 'odata-parser'
 import log from 'electron-log'
-import config from '../../config'
-import store from '../store'
 import { odataFilter, prepOdataInput } from './utils'
 
-const contractNumber = store.state.settings.contract.number || config.default_contract_number;
-const dataPath = `${os.tmpdir()}/insphire/contitems/${contractNumber}`;
+const dataPath = `${os.tmpdir()}/insphire/contracts`;
 
-const getContItems = url => {
+const getContracts = url => {
     return new Promise((resolve) => {
         const input = prepOdataInput(url);
 
@@ -29,11 +26,11 @@ const getContItems = url => {
             return resolve([]);
         }
 
-        storage.get('contitems_all', { dataPath }, function (error, data) {
+        storage.get('contracts_all', { dataPath }, function (error, data) {
             if (error) return resolve([]);
             resolve(odataFilter(odata, data));
         });
     });
 };
 
-export default getContItems;
+export default getContracts;

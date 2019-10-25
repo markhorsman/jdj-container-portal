@@ -47,7 +47,6 @@ export default {
 
   async mounted() {
     if (this.$store.state.settings) {
-      this.staticContract = this.$store.state.settings.contract.static;
       this.contract = this.$store.state.settings.contract.number;
     }
 
@@ -59,13 +58,6 @@ export default {
     }, []);
 
     this.contracts = this.contractOptions;
-
-    if (this.$config.default_contract_number && !this.contract) {
-      const match = this.contractOptions.find(
-        c => c.value === this.$config.default_contract_number
-      );
-      if (match) this.contract = match.value;
-    }
   },
 
   methods: {

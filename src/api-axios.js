@@ -4,6 +4,7 @@ import { eventHub } from './eventhub'
 import getStock from './axios-cache/stock';
 import getCustomerContact from './axios-cache/customerContact'
 import getContItems from './axios-cache/contItem'
+import getContracts from './axios-cache/contract'
 import getFAQ from './axios-cache/faq'
 
 const instance = axios.create({
@@ -88,6 +89,14 @@ instance.interceptors.request.use(
 
         if (conf.url.indexOf('contracts') >= 0 && conf.url.indexOf('items') >= 0) {
             return getContItems(conf.url)
+                .then(data => {
+                    conf.data = data;
+                    conf.adapter = setResponse(conf);
+
+                    return conf;
+                });
+        } else if (conf.url.indexOf('contracts') >= 0 && conf.url.indexOf('items') < 0) {
+            return getContracts(conf.url)
                 .then(data => {
                     conf.data = data;
                     conf.adapter = setResponse(conf);
