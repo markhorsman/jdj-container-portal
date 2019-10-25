@@ -11,6 +11,7 @@ export default new Vuex.Store({
         api_key: localStorage.getItem('api_key') || null,
         user: (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null),
         customer: null,
+        contract: null,
         rentalProducts: [],
         stockCount: (localStorage.getItem('stockCount') ? JSON.parse(localStorage.getItem('stockCount')) : null),
         offline: false,
@@ -36,6 +37,10 @@ export default new Vuex.Store({
 
         updateCustomer(state, customer) {
             state.customer = customer
+        },
+
+        updateContract(state, contract) {
+            state.contract = contract;
         },
 
         updateRentalProducts(state, products) {

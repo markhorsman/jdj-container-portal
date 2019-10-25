@@ -87,7 +87,7 @@ export default {
     getItems: function() {
       this.$api
         .get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items/?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
+          `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items/?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
         )
         .then(res => {
           if (res && res.data && res.data.length) {

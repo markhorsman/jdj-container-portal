@@ -5,7 +5,7 @@
         <q-card>
           <q-card-section>
             <h5>Instellingen</h5>
-            <q-form @submit="handleSubmit" @reset="onReset" class="q-gutter-md">
+            <q-form @submit="handleSubmit" class="q-gutter-md">
               <q-checkbox v-model="staticContract" label="Statisch contract" />
 
               <div class="row q-col-gutter-sm">
@@ -39,7 +39,6 @@
               <q-card-actions align="right">
                 <p v-show="errored" class="error">Ongeldige invoer</p>
                 <q-btn label="Opslaan" type="submit" color="primary" />
-                <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
               </q-card-actions>
             </q-form>
           </q-card-section>
@@ -52,6 +51,7 @@
 <script>
 import { required } from "vuelidate/lib/validators";
 import { eventHub } from "../eventhub";
+import { getAllContracts } from "../contracts";
 
 const throat = require("throat")(Promise);
 
@@ -74,7 +74,21 @@ export default {
       this.contract = this.$store.state.settings.contract.number;
     }
 
-    await this.getAllContracts();
+    const items = await getAllContracts();
+
+    this.contractOptions = items.reduce((acc, c) => {
+      acc.push({ label: `${c.CONTNO} - ${c.ACCT}`, value: c.CONTNO });
+      return acc;
+    }, []);
+
+    this.contracts = this.contractOptions;
+
+    if (this.$config.default_contract_number && !this.contract) {
+      const match = this.contractOptions.find(
+        c => c.value === this.$config.default_contract_number
+      );
+      if (match) this.contract = match.value;
+    }
   },
 
   validations: {
@@ -88,10 +102,6 @@ export default {
         error: validation.$error,
         dirty: validation.$dirty
       };
-    },
-
-    onReset(e) {
-      this.contract = null;
     },
 
     async handleSubmit(e) {
@@ -119,88 +129,6 @@ export default {
           });
         }
       }
-    },
-
-    async getContractsCount() {
-      let res;
-
-      try {
-        res = await this.$api.get(
-          `${this.$config.api_base_url}contracts?api_key=${this.$store.state.api_key}&$top=1&$skip=0&$inlinecount=allpages&$orderby=CONTNO asc&fields=RECID`
-        );
-
-        if (!res || !res.data || !res.data.totalCount) return 0;
-
-        return res.data.totalCount;
-      } catch (e) {
-        console.log(e);
-      }
-    },
-
-    async getAllContracts() {
-      const list = [];
-      let items = [];
-      const top = 200;
-      const concurrency = 5;
-
-      eventHub.$emit("before-request");
-      this.$store.commit("updateLoaderState", true);
-
-      const total = await this.getContractsCount();
-
-      if (!total) {
-        eventHub.$emit("after-response");
-        this.$store.commit("updateLoaderState", false);
-        return;
-      }
-
-      const iterations = Math.ceil(total / top);
-      const max = top;
-      for (let i = 0; i < iterations; i++) {
-        list.push(i * max);
-      }
-
-      const data = await Promise.all(
-        list.map(throat(concurrency, skip => this.getContracts(max, skip)))
-      );
-
-      eventHub.$emit("after-response");
-      this.$store.commit("updateLoaderState", false);
-
-      items = data.reduce((acc, a) => {
-        acc.push.apply(acc, a);
-        return acc;
-      }, []);
-
-      this.contractOptions = items.reduce((acc, c) => {
-        acc.push({ label: `${c.CONTNO} - ${c.ACCT}`, value: c.CONTNO });
-        return acc;
-      }, []);
-
-      this.contracts = this.contractOptions;
-
-      if (this.$config.default_contract_number && !this.contract) {
-        const match = this.contractOptions.find(
-          c => c.value === this.$config.default_contract_number
-        );
-        if (match) this.contract = match.value;
-      }
-    },
-
-    async getContracts(top, skip) {
-      let res;
-
-      try {
-        res = await this.$api.get(
-          `${this.$config.api_base_url}contracts?api_key=${this.$store.state.api_key}&$top=${top}&$skip=${skip}&$orderby=CONTNO asc&fields=RECID,CONTNO,ACCT,HIREDATE,ESTRETD`
-        );
-
-        return res.data;
-      } catch (e) {
-        console.log(e);
-      }
-
-      return [];
     },
 
     filterContracts(val, update, abort) {

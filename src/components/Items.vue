@@ -54,6 +54,36 @@
       </q-card>
     </q-dialog>
 
+    <div class="row q-col-gutter-sm">
+      <div class="col-xs-12 col-md6 col-4">
+        <br />
+        <q-select
+          v-if="contractIsDynamic"
+          ref="contract"
+          outlined
+          v-model="contract"
+          use-input
+          hide-selected
+          fill-input
+          input-debounce="0"
+          :options="contractOptions"
+          @filter="filterContracts"
+          @input="updateContract"
+          label="Contract"
+        >
+          <template v-slot:no-option>
+            <q-item>
+              <q-item-section class="text-grey">Geen resultaten</q-item-section>
+            </q-item>
+          </template>
+          <template v-slot:append>
+            <q-icon name="fas fa-asterisk" style="font-size: 0.5em;" />
+          </template>
+        </q-select>
+        <br />
+      </div>
+    </div>
+
     <q-table
       title="Artikelen"
       :data="tableData"
@@ -75,7 +105,14 @@
         />
       </template>
       <template v-slot:top-right>
-        <q-input borderless dense debounce="500" v-model="filter" placeholder="Zoeken" ref="searchContitems">
+        <q-input
+          borderless
+          dense
+          debounce="500"
+          v-model="filter"
+          placeholder="Zoeken"
+          ref="searchContitems"
+        >
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -117,6 +154,7 @@
 import { NFC } from "nfc-pcsc";
 import { eventHub } from "../eventhub";
 import { emailContractItems } from "../mailer";
+import { getAllContracts } from "../contracts";
 import printJS from "print-js";
 const ioHook = require("iohook");
 import log from "electron-log";
@@ -207,6 +245,9 @@ export default {
           sortable: true
         }
       ],
+      contracts: [],
+      contractOptions: [],
+      contract: null,
       code: "",
       tableData: [],
       filter: "",
@@ -223,6 +264,24 @@ export default {
   },
 
   async mounted() {
+    if (
+      this.$store.state.settings &&
+      this.$store.state.settings.contract.static
+    ) {
+      this.contract = this.$store.state.settings.contract.number;
+    } else {
+      this.contract = null;
+
+      const items = await getAllContracts();
+
+      this.contractOptions = items.reduce((acc, c) => {
+        acc.push({ label: `${c.CONTNO} - ${c.ACCT}`, value: c.CONTNO });
+        return acc;
+      }, []);
+
+      this.contracts = this.contractOptions;
+    }
+
     await this.onRequest({
       pagination: this.pagination,
       filter: undefined
@@ -274,6 +333,10 @@ export default {
     isValidEmail() {
       var re = /\S+@\S+\.\S+/;
       return re.test(this.emailaddress);
+    },
+
+    contractIsDynamic() {
+      return !this.$store.state.settings.contract.static;
     }
   },
 
@@ -366,10 +429,15 @@ export default {
 
       let res;
 
+      if (!this.contract) {
+        this.loading = false;
+        return;
+      }
+
       try {
         res = await this.$api.get(
           `${this.$config.api_base_url}contracts/${
-            this.$config.default_contract_number
+            this.contract
           }/items?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
@@ -493,6 +561,23 @@ export default {
           message: `Het updaten van het contract artikel ${item.ITEMNO} met memo ${value} is mislukt.`
         });
       }
+    },
+
+    filterContracts(val, update, abort) {
+      update(() => {
+        const needle = val.toLowerCase();
+        this.contractOptions = this.contracts.filter(
+          v => v.label.toLowerCase().indexOf(needle) > -1
+        );
+      });
+    },
+
+    updateContract(v) {
+      this.contract = v.value;
+      this.onRequest({
+        pagination: this.pagination,
+        filter: this.filter
+      });
     }
   },
 

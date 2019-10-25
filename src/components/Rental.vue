@@ -31,7 +31,11 @@
         </div>
       </q-step>
 
-      <q-step :name="2" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 2">
+      <q-step :name="2" title="Contract kiezen" icon="scroll" :done="step > 2">
+        <ChooseContract />
+      </q-step>
+
+      <q-step :name="3" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 3">
         <q-btn-toggle
           v-model="rentalType"
           push
@@ -60,7 +64,7 @@
         <br />
       </q-step>
 
-      <q-step :name="3" title="Artikelen scannen" icon="build" :done="step > 3">
+      <q-step :name="4" title="Artikelen scannen" icon="build" :done="step > 4">
         <ReadProduct
           :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
           :isOffhire="rentalType === 'return'"
@@ -72,10 +76,10 @@
       </q-step>
 
       <q-step
-        :name="4"
+        :name="5"
         title="Controleren en bevestigen"
         icon="playlist_add_check"
-        :done="step > 4"
+        :done="step > 5"
       >
         <p>Controleer de lijst met producten.</p>
         <q-table
@@ -94,10 +98,10 @@
         <q-stepper-navigation>
           <q-btn
             ref="stepperNextBtn"
-            @click="step === 4 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
+            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
-            :label="step === 4 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasProducts) || nextIsDisabled"
+            :label="step === 5 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
+            :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasContract) || (step === 3 && !hasProducts) || nextIsDisabled"
           />
           <q-btn
             v-if="step > 1"
@@ -125,6 +129,7 @@ import moment from "moment";
 import ReadCustomer from "./ReadCustomer.vue";
 import ReadProduct from "./ReadProduct.vue";
 import ContractItems from "./ContractItems.vue";
+import ChooseContract from "./ChooseContract.vue";
 
 import { eventHub } from "../eventhub";
 const throat = require("throat")(Promise);
@@ -134,6 +139,7 @@ export default {
 
   components: {
     ReadCustomer,
+    ChooseContract,
     ReadProduct,
     ContractItems
   },
@@ -142,12 +148,22 @@ export default {
     hasCustomer() {
       return !!this.$store.state.customer;
     },
+    hasContract() {
+      if (this.$store.state.settings.contract.static) return true;
+      return !!this.$store.state.contract;
+    },
     hasProducts() {
       return !!this.$store.state.rentalProducts.length;
     }
   },
 
   mounted() {
+    if (this.$store.state.settings.contract.static) {
+      this.$store.commit(
+        "updateContract",
+        this.$store.state.settings.contract.number
+      );
+    }
     this.rentalTypeChanged(this.rentalType);
     this.genRentalQueueOptions();
   },
@@ -274,6 +290,7 @@ export default {
       this.confirmCancel = false;
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      this.$store.commit("updateContract", null);
       this.$router.push("/rental");
       this.step = 1;
 
@@ -293,7 +310,7 @@ export default {
       let result;
       try {
         result = await this.$api.post(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}`,
+          `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items?api_key=${this.$store.state.api_key}`,
           item
         );
       } catch (e) {
@@ -392,7 +409,7 @@ export default {
       let result;
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}?api_key=${this.$store.state.api_key}`
+          `${this.$config.api_base_url}contracts/${this.$store.state.contract}?api_key=${this.$store.state.api_key}`
         );
       } catch (e) {
         result = null;
@@ -405,7 +422,7 @@ export default {
 
       try {
         result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`
+          `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`
         );
       } catch (e) {
         result = null;
@@ -485,7 +502,7 @@ export default {
       if (!items || !items.length) {
         eventHub.$emit("after-response");
         this.notify(
-          `Artikelen van contract (${this.$config.default_contract_number}) niet gevonden`
+          `Artikelen van contract (${this.$store.state.contract}) niet gevonden`
         );
         return;
       }
@@ -520,7 +537,7 @@ export default {
         eventHub.$emit("after-response");
         this.$store.commit("updateLoaderState", false);
         this.notify(
-          `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$config.default_contract_number})`
+          `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$store.state.contract})`
         );
         return;
       }
@@ -562,9 +579,7 @@ export default {
 
       const offhireConfirmResults = await Promise.all(
         processed.map(
-          throat(3, p =>
-            this.offhireConfirmItem(this.$config.default_contract_number, p)
-          )
+          throat(3, p => this.offhireConfirmItem(this.$store.state.contract, p))
         )
       );
 
@@ -648,7 +663,7 @@ export default {
         this.$store.commit("updateLoaderState", false);
 
         this.notify(
-          `Contract (${this.$config.default_contract_number}) kon niet worden opgehaald`
+          `Contract (${this.$store.state.contract}) kon niet worden opgehaald`
         );
 
         return;
@@ -660,7 +675,7 @@ export default {
         this.$store.commit("updateLoaderState", false);
 
         this.notify(
-          `Het datum veld ESTRETD van het contract (${this.$config.default_contract_number}) is ongeldig.`
+          `Het datum veld ESTRETD van het contract (${this.$store.state.contract}) is ongeldig.`
         );
 
         return;
