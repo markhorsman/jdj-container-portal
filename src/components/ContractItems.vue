@@ -115,7 +115,7 @@ export default {
       if (data.product.UNIQUE) {
         item = this.items.find(obj => obj.ITEMNO === data.product.ITEMNO);
       } else {
-        match = this.items.find(
+        item = this.items.find(
           obj =>
             obj.ITEMNO === data.product.ITEMNO &&
             obj.MEMO ===

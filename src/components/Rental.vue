@@ -101,7 +101,7 @@
             @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
             color="primary"
             :label="step === 5 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasContract) || (step === 3 && !hasProducts) || nextIsDisabled"
+            :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasContract) || (step === 4 && !hasProducts) || nextIsDisabled"
           />
           <q-btn
             v-if="step > 1"
@@ -628,6 +628,7 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
+      this.$store.commit("updateContract", null);
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 
