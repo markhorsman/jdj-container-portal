@@ -21,9 +21,6 @@
           <q-item-section class="text-grey">Geen resultaten</q-item-section>
         </q-item>
       </template>
-      <template v-slot:append>
-        <q-icon name="fas fa-asterisk" style="font-size: 0.5em;" />
-      </template>
     </q-select>
   </div>
 </template>
@@ -40,7 +37,7 @@ export default {
 
   data() {
     return {
-      disabled: get(this.$store.state, 'settings.contract.static', true),
+      disabled: get(this.$store.state, "settings.contract.static", true),
       contracts: [],
       contractOptions: [],
       contract: null
@@ -48,12 +45,16 @@ export default {
   },
 
   async mounted() {
-    if (get(this.$store.state, 'settings.contract.static', true)) {
-      this.contract = get(this.$store.state, 'settings.contract.number', this.$config.default_contract_number);
+    if (get(this.$store.state, "settings.contract.static", true)) {
+      this.contract = get(
+        this.$store.state,
+        "settings.contract.number",
+        this.$config.default_contract_number
+      );
       this.contractOptions = [{ label: this.contract, value: this.contract }];
       this.$store.commit("updateContract", this.contract);
     } else {
-       const items = await getAllContracts();
+      const items = await getAllContracts();
 
       this.contractOptions = items.reduce((acc, c) => {
         acc.push({ label: `${c.CONTNO} - ${c.ACCT}`, value: c.CONTNO });
@@ -64,9 +65,9 @@ export default {
 
       if (this.$store.state.contract) {
         const match = this.contractOptions.find(
-        c => c.value === this.$store.state.contract
-      );
-      if (match) this.contract = match.value;
+          c => c.value === this.$store.state.contract
+        );
+        if (match) this.contract = match.value;
       }
     }
   },

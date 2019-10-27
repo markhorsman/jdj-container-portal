@@ -11,7 +11,7 @@
               <div class="row q-col-gutter-sm">
                 <div class="col-xs-12 col-md6 col-4">
                   <q-select
-                    v-if="staticContract"
+                    :disable="!staticContract"
                     ref="contract"
                     outlined
                     v-model="contract"
@@ -28,9 +28,6 @@
                       <q-item>
                         <q-item-section class="text-grey">Geen resultaten</q-item-section>
                       </q-item>
-                    </template>
-                    <template v-slot:append>
-                      <q-icon name="fas fa-asterisk" style="font-size: 0.5em;" />
                     </template>
                   </q-select>
                 </div>
@@ -91,11 +88,7 @@ export default {
     }
   },
 
-  validations: {
-    // username: { required },
-    // password: { required },
-    // depot: { required }
-  },
+  validations: {},
   methods: {
     status(validation) {
       return {

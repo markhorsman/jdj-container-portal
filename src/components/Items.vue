@@ -58,7 +58,7 @@
       <div class="col-xs-12 col-md6 col-4">
         <br />
         <q-select
-          v-if="contractIsDynamic"
+          :disable="!contractIsDynamic"
           ref="contract"
           outlined
           v-model="contract"
@@ -75,9 +75,6 @@
             <q-item>
               <q-item-section class="text-grey">Geen resultaten</q-item-section>
             </q-item>
-          </template>
-          <template v-slot:append>
-            <q-icon name="fas fa-asterisk" style="font-size: 0.5em;" />
           </template>
         </q-select>
         <br />
@@ -153,6 +150,7 @@
 <script>
 import { NFC } from "nfc-pcsc";
 import { eventHub } from "../eventhub";
+import { get } from "lodash";
 import { emailContractItems } from "../mailer";
 import { getAllContracts } from "../contracts";
 import printJS from "print-js";
@@ -264,11 +262,13 @@ export default {
   },
 
   async mounted() {
-    if (
-      this.$store.state.settings &&
-      this.$store.state.settings.contract.static
-    ) {
-      this.contract = this.$store.state.settings.contract.number;
+    if (get(this.$store.state, "settings.contract.static", true)) {
+      this.contract = get(
+        this.$store.state,
+        "settings.contract.number",
+        this.$config.default_contract_number
+      );
+      this.contractOptions = [{ label: this.contract, value: this.contract }];
     } else {
       this.contract = null;
 
