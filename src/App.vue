@@ -64,6 +64,7 @@
           <q-icon name="build" />
           <div>Container Tools</div>
           <q-space />
+          <q-btn dense flat icon="fas fa-cog" to="/settings" v-if="!userInAPIGroup && isOnline" />
           <q-btn
             dense
             flat
@@ -146,15 +147,6 @@
               <q-item-section>
                 <q-item-label>Voorraad</q-item-label>
                 <q-item-label caption>Voorraad artikelen inzien</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item clickable tag="a" to="/settings" v-if="!userInAPIGroup && isOnline">
-              <q-item-section avatar>
-                <q-icon name="fas fa-cog" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>Instellingen</q-item-label>
-                <q-item-label caption>Vast contract instellen</q-item-label>
               </q-item-section>
             </q-item>
             <q-item clickable tag="a" to="/stocktransfer" v-if="!userInAPIGroup && isOnline">

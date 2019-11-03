@@ -98,7 +98,7 @@
         <q-stepper-navigation>
           <q-btn
             ref="stepperNextBtn"
-            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : $refs.stepper.next()"
+            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : (step === 1 && hasStaticContract ? $refs.stepper.goTo(3) : $refs.stepper.next())"
             color="primary"
             :label="step === 5 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
             :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasContract) || (step === 4 && !hasProducts) || nextIsDisabled"
@@ -107,7 +107,7 @@
             v-if="step > 1"
             flat
             color="primary"
-            @click="$refs.stepper.previous()"
+            @click="(step === 3 && hasStaticContract ? $refs.stepper.goTo(1) : $refs.stepper.previous())"
             label="Terug"
             class="q-ml-sm"
           />
@@ -151,6 +151,9 @@ export default {
     hasContract() {
       if (this.$store.state.settings.contract.static) return true;
       return !!this.$store.state.contract;
+    },
+    hasStaticContract() {
+      return this.$store.state.settings.contract.static;
     },
     hasProducts() {
       return !!this.$store.state.rentalProducts.length;

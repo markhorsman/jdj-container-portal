@@ -62,7 +62,7 @@ const methods = {
 
     try {
       res = await axios.get(
-        `${config.api_base_url}contracts?api_key=${store.state.api_key}&$top=${top}&$skip=${skip}&$orderby=CONTNO asc&$filter=STATUS eq 2&fields=RECID,CONTNO,ACCT,STATUS`
+        `${config.api_base_url}contracts?api_key=${store.state.api_key}&$top=${top}&$skip=${skip}&$orderby=CONTNO asc&$filter=STATUS eq 2&fields=RECID,CONTNO,THEIRREF,STATUS`
       );
 
       return res.data;

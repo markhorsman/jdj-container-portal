@@ -57,7 +57,7 @@ export default {
       const items = await getAllContracts();
 
       this.contractOptions = items.reduce((acc, c) => {
-        acc.push({ label: `${c.CONTNO} - ${c.ACCT}`, value: c.CONTNO });
+        acc.push({ label: `${c.CONTNO} - ${c.THEIRREF}`, value: c.CONTNO });
         return acc;
       }, []);
 
