@@ -3,8 +3,8 @@ module.exports = {
   pluginOptions: {
     electronBuilder: {
       builderOptions: {
-        "productName": "JDJ Container Portal",
-        "appId": "jdj.container.portal.app",
+        "productName": "InspHire Portal",
+        "appId": "insphire.portal.app",
         "copyright": "Copyright © year ${author}",
         "win": {
           "target": "nsis",

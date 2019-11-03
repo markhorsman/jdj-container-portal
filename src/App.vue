@@ -62,7 +62,7 @@
           <q-badge>Versie: {{ version }}</q-badge>
           <q-space />
           <q-icon name="build" />
-          <div>Container Tools</div>
+          <div>InspHire Portal</div>
           <q-space />
           <q-btn dense flat icon="fas fa-cog" to="/settings" v-if="!userInAPIGroup && isOnline" />
           <q-btn

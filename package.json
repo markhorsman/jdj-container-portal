@@ -1,12 +1,12 @@
 {
-  "name": "jdj-container-portal",
-  "version": "1.6.8",
+  "name": "insphire-portal",
+  "version": "1.6.9",
   "author": "Mark Horsman <deadelus1988@gmail.com>",
   "keywords": [
     "javascript, rfid, vue.js, quasar"
   ],
   "license": "UNLICENSED",
-  "description": "Portale extension for Inpshire rental software",
+  "description": "Portale extension for InpsHire rental software",
   "private": true,
   "repository": {
     "type": "git",
