@@ -464,7 +464,7 @@ export default {
 
       try {
         res = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$config.default_contract_number}/items?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc&$filter=STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
+          `${this.$config.api_base_url}contracts/${this.contract}/items?api_key=${this.$store.state.api_key}&$top=${this.exportMax}&$orderby=ITEMNO asc&$filter=STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,ITEMDESC2,ITEMDESC3,MEMO,QTY,QTYRETD`
         );
       } catch (e) {
         log.error(e);
