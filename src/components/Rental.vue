@@ -294,7 +294,11 @@ export default {
       this.confirmCancel = false;
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
-      this.$store.commit("updateContract", null);
+
+      if (!this.$store.state.settings.contract.static) {
+        this.$store.commit("updateContract", null);
+      }
+
       this.$router.push("/rental");
       this.step = 1;
 
@@ -631,7 +635,11 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
-      this.$store.commit("updateContract", null);
+
+      if (!this.$store.state.settings.contract.static) {
+        this.$store.commit("updateContract", null);
+      }
+
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 
@@ -777,7 +785,11 @@ export default {
 
       this.$store.commit("updateRentalProducts", []);
       this.$store.commit("updateCustomer", null);
-      this.$store.commit("updateContract", null);
+
+      if (!this.$store.state.settings.contract.static) {
+        this.$store.commit("updateContract", null);
+      }
+
       this.$store.commit("updateLoaderState", false);
       eventHub.$emit("after-response");
 
