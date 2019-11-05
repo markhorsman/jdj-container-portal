@@ -31,11 +31,7 @@
         </div>
       </q-step>
 
-      <q-step :name="2" title="Contract kiezen" icon="fas fa-scroll" :done="step > 2">
-        <ChooseContract />
-      </q-step>
-
-      <q-step :name="3" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 3">
+      <q-step :name="2" title="Huren of terugbrengen" icon="compare_arrows" :done="step > 3">
         <q-btn-toggle
           v-model="rentalType"
           push
@@ -62,6 +58,10 @@
         </q-btn-toggle>
         <br />
         <br />
+      </q-step>
+
+      <q-step :name="3" title="Contract kiezen" icon="fas fa-scroll" :done="step > 2">
+        <ChooseContract />
       </q-step>
 
       <q-step :name="4" title="Artikelen scannen" icon="build" :done="step > 4">
@@ -98,16 +98,16 @@
         <q-stepper-navigation>
           <q-btn
             ref="stepperNextBtn"
-            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : (step === 1 && hasStaticContract ? $refs.stepper.goTo(3) : $refs.stepper.next())"
+            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : (step === 2 && hasStaticContract ? $refs.stepper.goTo(4) : $refs.stepper.next())"
             color="primary"
             :label="step === 5 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
-            :disabled="(step === 1 && !hasCustomer) || (step === 2 && !hasContract) || (step === 4 && !hasProducts) || nextIsDisabled"
+            :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasContract) || (step === 4 && !hasProducts) || nextIsDisabled"
           />
           <q-btn
             v-if="step > 1"
             flat
             color="primary"
-            @click="(step === 3 && hasStaticContract ? $refs.stepper.goTo(1) : $refs.stepper.previous())"
+            @click="(step === 4 && hasStaticContract ? $refs.stepper.goTo(2) : $refs.stepper.previous())"
             label="Terug"
             class="q-ml-sm"
           />
