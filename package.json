@@ -1,6 +1,6 @@
 {
   "name": "insphire-portal",
-  "version": "1.6.11",
+  "version": "1.6.12",
   "author": "Mark Horsman <deadelus1988@gmail.com>",
   "keywords": [
     "javascript, rfid, vue.js, quasar"

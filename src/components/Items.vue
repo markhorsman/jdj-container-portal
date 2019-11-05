@@ -421,7 +421,9 @@ export default {
       let startRow = (page - 1) * rowsPerPage;
 
       const buildFilter = () =>
-        `STATUS eq 1${
+        `STATUS eq 1
+        ${this.contract && filter ? ` and CONTNO eq '${this.contract}'` : ``}
+        ${
           filter
             ? ` and (startswith(ITEMNO, '${filter}') or indexof(ITEMDESC, '${filter}') gt -1 or indexof(ITEMDESC2, '${filter}') gt -1 or indexof(ITEMDESC3, '${filter}') gt -1 or indexof(MEMO, '${filter}') gt -1)`
             : ``
@@ -429,16 +431,18 @@ export default {
 
       let res;
 
-      if (!this.contract) {
+      if (!this.contract && !filter) {
         this.loading = false;
         return;
       }
 
+      let baseURL = `${this.$config.api_base_url}contracts/${this.contract}/items`;
+
+      if (filter) baseURL = `${this.$config.api_base_url}contractitems`;
+
       try {
         res = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${
-            this.contract
-          }/items?api_key=${
+          `${baseURL}?api_key=${
             this.$store.state.api_key
           }&$top=${rowsPerPage}&$skip=${startRow}&$inlinecount=allpages${
             sortBy ? `&$orderby=${sortBy} ${descending ? `desc` : `asc`}` : ``
