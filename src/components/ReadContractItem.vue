@@ -128,7 +128,7 @@
               @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
             />
           </q-td>
-          <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
+          <!-- <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td> -->
           <q-td key="DELETE" :props="props">
             <q-icon
               name="delete"
@@ -159,6 +159,7 @@ export default {
   data() {
     return {
       products: this.$store.state.rentalProducts || [],
+      deleted: [],
       itemnumber: null,
       code: "",
       reading: false,
@@ -244,15 +245,15 @@ export default {
           sortable: true,
           type: "rentalReturn"
         },
-        {
-          name: "STKLEVEL",
-          required: true,
-          label: "Voorraad",
-          align: "left",
-          field: row => row.STKLEVEL,
-          format: val => `${val}`,
-          sortable: true
-        },
+        // {
+        //   name: "STKLEVEL",
+        //   required: true,
+        //   label: "Voorraad",
+        //   align: "left",
+        //   field: row => row.STKLEVEL,
+        //   format: val => `${val}`,
+        //   sortable: true
+        // },
         {
           name: "DELETE",
           required: true,
@@ -332,6 +333,7 @@ export default {
     },
 
     deleteProduct: function(index) {
+      this.deleted.push(this.products[index]);
       this.products.splice(index, 1);
       this.$store.commit("updateRentalProducts", this.products);
     },
@@ -374,38 +376,40 @@ export default {
     },
 
     async addProduct(found) {
-      const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
+      const p = this.products.find(p => p.RECID === found.RECID);
 
-      if (!this.$store.state.offline) {
+      if (this.deleted.find(d => d.RECID === found.RECID)) {
+        return;
+      }
+
+      if (!this.$store.state.offline && !p) {
         let result;
 
         try {
-          eventHub.$emit("before-request");
-          this.$store.commit("updateLoaderState", true);
+          // this.$store.commit("updateLoaderState", true);
+          // result = await this.$api.get(
+          //   `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
+          // );
 
+          // if (result && result.data && result.data.length) {
+          //   found.STKLEVEL = result.data[0].STKLEVEL;
+          // } else {
+          //   found.STKLEVEL = 0;
+          // }
+
+          this.$store.commit("updateLoaderState", true);
           result = await this.$api.get(
-            `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
+            `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}'&fields=UNIQUE`
           );
 
           if (result && result.data && result.data.length) {
-            found.STKLEVEL = result.data[0].STKLEVEL;
-          }
-
-          if (!p) {
-            result = await this.$api.get(
-              `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}'&fields=UNIQUE`
-            );
-
-            if (result && result.data && result.data.length) {
-              found.UNIQUE = result.data[0].UNIQUE;
-            }
+            found.UNIQUE = result.data[0].UNIQUE;
+          } else {
+            return;
           }
         } catch (e) {
           log.error(e);
         }
-
-        eventHub.$emit("after-response");
-        this.$store.commit("updateLoaderState", false);
       }
 
       if (p && !p.UNIQUE) {
@@ -428,15 +432,17 @@ export default {
           Object.assign(found, {
             QTYDAM: 0,
             QTYLOST: 0,
-            QTYOK: p.UNIQUE ? 1 : 0
+            QTYOK: found.UNIQUE ? 1 : 0
           })
         );
       }
-      this.$store.commit("updateRentalProducts", this.products);
     },
 
     async getContractItems() {
       let res;
+
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
 
       try {
         let baseURL = `${this.$config.api_base_url}contractitems`;
@@ -459,6 +465,8 @@ export default {
             delete item.QTY;
             await this.addProduct(item);
           });
+
+          this.$store.commit("updateRentalProducts", this.products);
         } else {
           this.notifyNoContractItems();
         }
@@ -466,6 +474,9 @@ export default {
         log.error(e);
         this.notifyNoContractItems();
       }
+
+      eventHub.$emit("after-response");
+      this.$store.commit("updateLoaderState", false);
     }
   },
 
