@@ -65,10 +65,8 @@
       </q-step>
 
       <q-step :name="4" title="Artikelen scannen" icon="build" :done="step > 4">
-        <ReadProduct
-          :title="rentalType === 'return' ? 'Artikelen uit huur halen' : 'Artikelen in huur nemen'"
-          :isOffhire="rentalType === 'return'"
-        />
+        <ReadProduct v-if="rentalType !== 'return'" />
+        <ReadContractItem v-if="rentalType === 'return'" />
         <ContractItems
           v-if="rentalType === 'return' && this.$store.state.customer"
           :title="`Momenteel op naam van ${this.$store.state.customer.NAME}`"
@@ -98,7 +96,7 @@
         <q-stepper-navigation>
           <q-btn
             ref="stepperNextBtn"
-            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : (step === 2 && hasStaticContract ? $refs.stepper.goTo(4) : $refs.stepper.next())"
+            @click="step === 5 ? (rentalType === 'return' ? returnItems() : rentItems()) : (step === 2 && (hasStaticContract || rentalType === 'return') ? $refs.stepper.goTo(4) : $refs.stepper.next())"
             color="primary"
             :label="step === 5 ? (rentalType === 'return' ? 'Uit huur bevestigen' : 'In huur bevestigen') : 'Volgende'"
             :disabled="(step === 1 && !hasCustomer) || (step === 3 && !hasContract) || (step === 4 && !hasProducts) || nextIsDisabled"
@@ -107,7 +105,7 @@
             v-if="step > 1"
             flat
             color="primary"
-            @click="(step === 4 && hasStaticContract ? $refs.stepper.goTo(2) : $refs.stepper.previous())"
+            @click="(step === 4 && (hasStaticContract || rentalType === 'return') ? $refs.stepper.goTo(2) : $refs.stepper.previous())"
             label="Terug"
             class="q-ml-sm"
           />
@@ -128,6 +126,7 @@
 import moment from "moment";
 import ReadCustomer from "./ReadCustomer.vue";
 import ReadProduct from "./ReadProduct.vue";
+import ReadContractItem from "./ReadContractItem.vue";
 import ContractItems from "./ContractItems.vue";
 import ChooseContract from "./ChooseContract.vue";
 
@@ -141,6 +140,7 @@ export default {
     ReadCustomer,
     ChooseContract,
     ReadProduct,
+    ReadContractItem,
     ContractItems
   },
 
@@ -425,19 +425,6 @@ export default {
       return result;
     },
 
-    getContractItems: async function() {
-      let result;
-
-      try {
-        result = await this.$api.get(
-          `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,RECORDER,ITEMNO,MEMO,QTY,QTYRETD`
-        );
-      } catch (e) {
-        result = null;
-      }
-      return result;
-    },
-
     removeLocalProductByItemNumber: function(itemnumber) {
       const products = this.$store.state.rentalProducts;
       const i = products.map(item => item.ITEMNO === itemnumber);
@@ -497,59 +484,13 @@ export default {
         return this.queueTask("offhire");
       }
 
-      const products = [];
+      const products = this.$store.state.rentalProducts;
       const processed = [];
       const confirmed = [];
       let failed = 0;
 
       eventHub.$emit("before-request");
       this.$store.commit("updateLoaderState", true);
-
-      const response = await this.getContractItems();
-      const items = response.data;
-
-      if (!items || !items.length) {
-        eventHub.$emit("after-response");
-        this.notify(
-          `Artikelen van contract (${this.$store.state.contract}) niet gevonden`
-        );
-        return;
-      }
-
-      this.$store.state.rentalProducts.forEach(p => {
-        let match;
-
-        if (p.UNIQUE) {
-          match = items.find(obj => obj.ITEMNO === p.ITEMNO);
-        } else {
-          match = items.find(
-            obj =>
-              obj.ITEMNO === p.ITEMNO &&
-              obj.MEMO ===
-                `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`
-          );
-        }
-
-        if (match) {
-          products.push(
-            Object.assign(p, {
-              RECID: match.RECID,
-              RECORDER: match.RECORDER,
-              HIRED: match.QTY,
-              QTYRETD: match.QTYRETD
-            })
-          );
-        }
-      });
-
-      if (!products.length) {
-        eventHub.$emit("after-response");
-        this.$store.commit("updateLoaderState", false);
-        this.notify(
-          `De gescande producten hebben geen overeenkomst met de producten in het contract(${this.$store.state.contract})`
-        );
-        return;
-      }
 
       const contItemOffhireResults = await Promise.all(
         products.map(throat(3, p => this.offhireContractItem(p.RECID, p)))

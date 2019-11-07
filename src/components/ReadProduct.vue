@@ -5,22 +5,16 @@
     >Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
     <q-table
       v-if="products.length"
-      :title="title"
+      title="Artikelen in huur nemen"
       :data="products"
       :columns="columns"
-      :visible-columns="visibleColumns"
       row-key="RECID"
     >
       <template v-slot:body="props">
         <q-tr :props="props">
           <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
           <q-td key="DESC1" :props="props">{{ props.row.DESC1 }}</q-td>
-          <q-td
-            key="QTY"
-            v-if="!isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
+          <q-td key="QTY" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ props.row.QTY }}
             <q-popup-edit v-model="props.row.QTY" buttons v-if="!props.row.UNIQUE">
@@ -50,132 +44,6 @@
                 </q-item>
               </q-list>
             </q-popup-edit>
-          </q-td>
-
-          <q-td
-            key="QTYOK"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
-            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
-            {{ !props.row.UNIQUE ? props.row.QTYOK : '' }}
-            <q-popup-edit v-model="props.row.QTYOK" buttons v-if="!props.row.UNIQUE">
-              <q-list>
-                <q-item>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="add"
-                      @click="incrementQty(props.row.__index, 'QTYOK')"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label
-                      style="text-align: center; padding-right: 10px;"
-                    >{{ props.row.QTYOK }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="remove"
-                      @click="decrementQty(props.row.__index, 'QTYOK')"
-                    />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-popup-edit>
-            <q-toggle
-              v-if="props.row.UNIQUE"
-              :value="!!props.row.QTYOK"
-              @input="v => toggleReturnState(v, props.row.__index, 'QTYOK')"
-            />
-          </q-td>
-
-          <q-td
-            key="QTYDAM"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
-            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
-            {{ !props.row.UNIQUE ? props.row.QTYDAM : '' }}
-            <q-popup-edit v-model="props.row.QTYDAM" buttons v-if="!props.row.UNIQUE">
-              <q-list>
-                <q-item>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="add"
-                      @click="incrementQty(props.row.__index, 'QTYDAM')"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label
-                      style="text-align: center; padding-right: 10px;"
-                    >{{ props.row.QTYDAM }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="remove"
-                      @click="decrementQty(props.row.__index, 'QTYDAM')"
-                    />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-popup-edit>
-            <q-toggle
-              v-if="props.row.UNIQUE"
-              :value="!!props.row.QTYDAM"
-              @input="v => toggleReturnState(v, props.row.__index, 'QTYDAM')"
-            />
-          </q-td>
-
-          <q-td
-            key="QTYLOST"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
-            <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
-            {{ !props.row.UNIQUE ? props.row.QTYLOST : '' }}
-            <q-popup-edit v-model="props.row.QTYLOST" buttons v-if="!props.row.UNIQUE">
-              <q-list>
-                <q-item>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="add"
-                      @click="incrementQty(props.row.__index, 'QTYLOST')"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label
-                      style="text-align: center; padding-right: 10px;"
-                    >{{ props.row.QTYLOST }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section>
-                    <q-btn
-                      round
-                      color="primary"
-                      icon="remove"
-                      @click="decrementQty(props.row.__index, 'QTYLOST')"
-                    />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-popup-edit>
-            <q-toggle
-              v-if="props.row.UNIQUE"
-              :value="!!props.row.QTYLOST"
-              @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
-            />
           </q-td>
 
           <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
@@ -214,7 +82,6 @@ export default {
       itemnumber: null,
       code: "",
       reading: false,
-      visibleColumns: [],
       columns: [
         {
           name: "ITEMNO",
@@ -244,33 +111,6 @@ export default {
           type: "rentalPickup"
         },
         {
-          name: "QTYOK",
-          label: "Goedgekeurd",
-          align: "left",
-          field: row => row.QTYOK,
-          format: val => `${val}`,
-          sortable: true,
-          type: "rentalReturn"
-        },
-        {
-          name: "QTYDAM",
-          label: "Beschadigd",
-          align: "left",
-          field: row => row.QTYDAM,
-          format: val => `${val}`,
-          sortable: true,
-          type: "rentalReturn"
-        },
-        {
-          name: "QTYLOST",
-          label: "Vermist",
-          align: "left",
-          field: row => row.QTYLOST,
-          format: val => `${val}`,
-          sortable: true,
-          type: "rentalReturn"
-        },
-        {
           name: "STKLEVEL",
           required: true,
           label: "Voorraad",
@@ -293,34 +133,19 @@ export default {
   mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
-
-    this.visibleColumns = this.columns.reduce((acc, c) => {
-      if (
-        !c.type ||
-        c.type === (this.isRentalTypeReturn ? "rentalReturn" : "rentalPickup")
-      )
-        acc.push(c.name);
-      return acc;
-    }, []);
-  },
-
-  computed: {
-    isRentalTypeReturn() {
-      return this.$parent.$parent.$parent.rentalType === "return";
-    }
   },
 
   methods: {
     incrementQty: function(index, prop) {
-      if (prop === 'QTY' && parseInt(this.products[index].STKLEVEL) < (parseInt(this.products[index].QTY) + 1)) {
+      if (
+        parseInt(this.products[index].STKLEVEL) <
+        parseInt(this.products[index].QTY) + 1
+      ) {
         this.$q.notify({
           color: "red-5",
           icon: "fas fa-exclamation-triangle",
           message: `Product met nummer ${this.products[index].ITEMNO} heeft onvoldoende voorraad.`
         });
-        return;
-      } else if (prop !== 'QTY') {
-        eventHub.$emit("offhire-check-qty", { product: this.products[index], prop, index });
         return;
       }
 
@@ -332,43 +157,6 @@ export default {
       if (this.products[index][prop] === 1) return;
       this.products[index][[prop]]--;
       this.$store.commit("updateRentalProducts", this.products);
-    },
-
-    incrementOffhireProduct: function(data) {
-      this.products[data.index][data.prop]++;
-      this.$store.commit("updateRentalProducts", this.products);
-    },
-
-    toggleReturnState: function(val, index, prop) {
-      switch (prop) {
-        case "QTYOK":
-          this.products[index][prop] = val
-            ? 1
-            : !this.products[index].QTYDAM && !this.products[index].QTYLOST
-            ? 1
-            : 0;
-          this.products[index].QTYDAM = 0;
-          this.products[index].QTYLOST = 0;
-          break;
-        case "QTYDAM":
-          this.products[index][prop] = val
-            ? 1
-            : !this.products[index].QTYOK && !this.products[index].QTYLOST
-            ? 1
-            : 0;
-          this.products[index].QTYOK = 0;
-          this.products[index].QTYLOST = 0;
-          break;
-        case "QTYLOST":
-          this.products[index][prop] = val
-            ? 1
-            : !this.products[index].QTYOK && !this.products[index].QTYDAM
-            ? 1
-            : 0;
-          this.products[index].QTYOK = 0;
-          this.products[index].QTYDAM = 0;
-          break;
-      }
     },
 
     deleteProduct: function(index) {
@@ -419,9 +207,7 @@ export default {
 
         try {
           result = await this.$api.get(
-            `${
-              this.$config.api_base_url
-            }stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
+            `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
           );
         } catch (e) {
           log.error(e);
@@ -436,29 +222,22 @@ export default {
       const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
 
       if (p && !p.UNIQUE) {
-        if (this.$parent.$parent.$parent.rentalType === "return") {
-          eventHub.$emit("offhire-check-qty", { product: p, prop: 'QTYOK', index: findIndex(this.products, { ITEMNO: p.ITEMNO }) });
+        if (parseInt(p.STKLEVEL) >= parseInt(p.QTY) + 1) {
+          p.QTY = parseInt(p.QTY) + 1;
         } else {
-          if (parseInt(p.STKLEVEL) >= (parseInt(p.QTY) + 1)) {
-            p.QTY = parseInt(p.QTY) + 1;
-          } else {
-             this.$q.notify({
-              color: "red-5",
-              icon: "fas fa-exclamation-triangle",
-              message: `Product met nummer ${p.ITEMNO} heeft onvoldoende voorraad.`
-            });
-          }
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Product met nummer ${p.ITEMNO} heeft onvoldoende voorraad.`
+          });
         }
       } else if (p && p.UNIQUE) {
         // notify?
       } else {
-        if (this.$parent.$parent.$parent.rentalType === "return" || found.STKLEVEL > 0) {
+        if (found.STKLEVEL > 0) {
           this.products.push(
             Object.assign(found, {
-              QTY: 1,
-              QTYDAM: 0,
-              QTYLOST: 0,
-              QTYOK: 1
+              QTY: 1
             })
           );
         } else {
@@ -481,12 +260,6 @@ export default {
           if (res && res.data && res.data.length) {
             const found = res.data[0];
 
-            // send signal
-            if (found && !found.UNIQUE && this.isOffhire) {
-              eventHub.$emit("offhire-check-contitem", found);
-              return;
-            }
-
             this.addProduct(found);
           } else {
             this.notifyNotFound();
@@ -497,16 +270,6 @@ export default {
           this.notifyNotFound();
         });
     }
-  },
-
-  created() {
-    eventHub.$on("add-product", this.addProduct);
-    eventHub.$on("increment-offhire-product", this.incrementOffhireProduct);
-  },
-
-  beforeDestroy() {
-    eventHub.$off("add-product", this.addProduct);
-    eventHub.$off("increment-offhire-product", this.incrementOffhireProduct);
   },
 
   destroyed() {
