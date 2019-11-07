@@ -65,10 +65,12 @@
           use-input
           hide-selected
           fill-input
+          clearable
           input-debounce="0"
           :options="contractOptions"
           @filter="filterContracts"
           @input="updateContract"
+          @clear="updateContract"
           label="Contract"
         >
           <template v-slot:no-option>
@@ -577,7 +579,8 @@ export default {
     },
 
     updateContract(v) {
-      this.contract = v.value;
+      if (!v) this.contract = null;
+      else this.contract = v.value;
       this.onRequest({
         pagination: this.pagination,
         filter: this.filter

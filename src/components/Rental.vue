@@ -388,7 +388,7 @@ export default {
         result = await this.$api.post(
           `${this.$config.container_api_base_url}offhire`,
           {
-            CONTNO: contno,
+            CONTNO: item.CONTNO,
             ITEMNO: item.ITEMNO,
             CONTITEM_RECORDER: item.RECORDER,
             CONTITEM_RECID: item.RECID,

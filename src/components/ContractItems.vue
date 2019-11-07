@@ -67,30 +67,37 @@ export default {
     };
   },
 
-  mounted() {
-    this.getItems();
-
+  async mounted() {
     if (this.$store.state.customer) {
       this.memo = `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`;
     }
+
+    await this.getItems();
   },
 
   methods: {
-    getItems: function() {
-      this.$api
-        .get(
-          `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items/?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
-        )
-        .then(res => {
-          if (res && res.data && res.data.length) {
-            res.data.forEach(p => {
-              if (p.MEMO === this.memo) {
-                this.items.push(p);
-              }
-            });
-          }
-        })
-        .catch(() => {});
+    async getItems() {
+      let baseURL = `${this.$config.api_base_url}contractitems`;
+
+      if (
+        this.$store.state.settings.contract.static &&
+        this.$store.state.contract
+      ) {
+        baseURL = `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items`;
+      }
+
+      let res;
+
+      try {
+        res = await this.$api.get(
+          `${baseURL}?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=STATUS eq 1 and indexof(MEMO, '${this.memo}') gt -1&fields=RECID,ITEMNO,QTY,QTYRETD,ITEMDESC,MEMO`
+        );
+        if (res && res.data && res.data.length) {
+          this.items = res.data;
+        }
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 };

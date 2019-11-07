@@ -14,14 +14,11 @@
         <q-tr :props="props">
           <q-td key="CONTNO" :props="props">{{ props.row.CONTNO }}</q-td>
           <q-td key="ITEMNO" :props="props">{{ props.row.ITEMNO }}</q-td>
-          <q-td key="ITEMDESC" :props="props">{{ props.row.DESC1 }}</q-td>
+          <q-td key="ITEMDESC" :props="props">{{ props.row.ITEMDESC }}</q-td>
           <q-td key="MEMO" :props="props">{{ props.row.MEMO }}</q-td>
-          <q-td
-            key="QTYOK"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
+          <q-td key="HIRED" :props="props">{{ props.row.HIRED }}</q-td>
+          <q-td key="QTYRETD" :props="props">{{ props.row.QTYRETD }}</q-td>
+          <q-td key="QTYOK" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ !props.row.UNIQUE ? props.row.QTYOK : '' }}
             <q-popup-edit v-model="props.row.QTYOK" buttons v-if="!props.row.UNIQUE">
@@ -58,12 +55,7 @@
             />
           </q-td>
 
-          <q-td
-            key="QTYDAM"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
+          <q-td key="QTYDAM" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ !props.row.UNIQUE ? props.row.QTYDAM : '' }}
             <q-popup-edit v-model="props.row.QTYDAM" buttons v-if="!props.row.UNIQUE">
@@ -100,12 +92,7 @@
             />
           </q-td>
 
-          <q-td
-            key="QTYLOST"
-            v-if="isRentalTypeReturn"
-            :props="props"
-            :class="props.row.UNIQUE ? 'text-bold' : ''"
-          >
+          <q-td key="QTYLOST" :props="props" :class="props.row.UNIQUE ? 'text-bold' : ''">
             <q-icon name="fas fa-edit" v-if="!props.row.UNIQUE" />
             {{ !props.row.UNIQUE ? props.row.QTYLOST : '' }}
             <q-popup-edit v-model="props.row.QTYLOST" buttons v-if="!props.row.UNIQUE">
@@ -141,8 +128,6 @@
               @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
             />
           </q-td>
-          <q-td key="QTY" :props="props">{{ props.row.QTY }}</q-td>
-          <q-td key="QTYRETD" :props="props">{{ props.row.QTYRETD }}</q-td>
           <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td>
           <q-td key="DELETE" :props="props">
             <q-icon
@@ -215,11 +200,11 @@ export default {
           sortable: true
         },
         {
-          name: "QTY",
+          name: "HIRED",
           required: true,
           label: "Verhuurd",
           align: "left",
-          field: row => row.QTY,
+          field: row => row.HIRED,
           format: val => `${val}`,
           sortable: true
         },
@@ -288,8 +273,8 @@ export default {
     incrementQty: function(index, prop) {
       const p = this.products[index];
       if (
-        parseInt(p.QTY) - parseInt(p.QTYRETD) >=
-        parseInt(p.QTYDAM) + parseInt(p.QTYLOST) + parseInt(p.QTYOK)
+        parseInt(p.QTYDAM) + parseInt(p.QTYLOST) + parseInt(p.QTYOK) >=
+        parseInt(p.HIRED) - parseInt(p.QTYRETD)
       ) {
         this.$q.notify({
           color: "red-5",
@@ -351,12 +336,12 @@ export default {
       this.$store.commit("updateRentalProducts", this.products);
     },
 
-    getInput: function(e) {
+    async getInput(e) {
       this.$parent.$parent.$parent.nextIsDisabled = true;
 
       if (e.keycode === 28 && this.code.length >= 5) {
         this.itemnumber = this.code.replace(/\s/g, "").toUpperCase();
-        this.getContractItems();
+        await this.getContractItems();
         this.code = "";
 
         setTimeout(() => {
@@ -389,44 +374,61 @@ export default {
     },
 
     async addProduct(found) {
+      const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
+
       if (!this.$store.state.offline) {
         let result;
 
         try {
+          eventHub.$emit("before-request");
+          this.$store.commit("updateLoaderState", true);
+
           result = await this.$api.get(
             `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
           );
+
+          if (result && result.data && result.data.length) {
+            found.STKLEVEL = result.data[0].STKLEVEL;
+          }
+
+          if (!p) {
+            result = await this.$api.get(
+              `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}'&fields=UNIQUE`
+            );
+
+            if (result && result.data && result.data.length) {
+              found.UNIQUE = result.data[0].UNIQUE;
+            }
+          }
         } catch (e) {
           log.error(e);
-          result = null;
         }
 
-        if (result && result.data && result.data.length) {
-          found.STKLEVEL = result.data[0].STKLEVEL;
-        }
+        eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
       }
-
-      const p = this.products.find(p => p.ITEMNO === found.ITEMNO);
 
       if (p && !p.UNIQUE) {
         if (
-          parseInt(p.QTY) - parseInt(p.QTYRETD) >=
-          parseInt(p.QTYDAM) + parseInt(p.QTYLOST) + parseInt(p.QTYOK)
+          parseInt(p.QTYDAM) + parseInt(p.QTYLOST) + parseInt(p.QTYOK) >=
+          parseInt(p.HIRED) - parseInt(p.QTYRETD)
         ) {
           this.$q.notify({
             color: "red-5",
             icon: "fas fa-exclamation-triangle",
             message: `Het ingestelde aantal van het artikel met nummer ${p.ITEMNO} is hoger dan het aantal momenteel in huur.`
           });
+        } else {
+          p.QTYOK += 1;
         }
       } else if (p && p.UNIQUE) {
         // notify?
       } else {
-        this.contractItems.push(
+        this.products.push(
           Object.assign(found, {
             QTYDAM: 0,
             QTYLOST: 0,
-            QTYOK: 1
+            QTYOK: p.UNIQUE ? 1 : 0
           })
         );
       }
@@ -439,8 +441,11 @@ export default {
       try {
         let baseURL = `${this.$config.api_base_url}contractitems`;
 
-        if (this.$store.state.settings.contract.static && this.contract) {
-          baseURL = `${this.$config.api_base_url}contracts/${this.contract}/items`;
+        if (
+          this.$store.state.settings.contract.static &&
+          this.$store.state.contract
+        ) {
+          baseURL = `${this.$config.api_base_url}contracts/${this.$store.state.contract}/items`;
         }
 
         res = await this.$api.get(
@@ -449,6 +454,9 @@ export default {
 
         if (res && res.data && res.data.length) {
           res.data.forEach(async item => {
+            item.DESC1 = item.ITEMDESC;
+            item.HIRED = item.QTY;
+            delete item.QTY;
             await this.addProduct(item);
           });
         } else {
