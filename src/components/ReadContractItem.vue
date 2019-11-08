@@ -1,5 +1,31 @@
 <template>
   <div class="q-pa-md">
+    <q-dialog v-model="selectContractItems">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Contract items</div>
+        </q-card-section>
+
+        <q-card-section>
+          <p>Selecteer de contract items die je uit huur wilt halen</p>
+
+          <q-table
+            v-if="contractItems.length"
+            :data="contractItems"
+            :columns="itemColumns"
+            row-key="RECID"
+            selection="single"
+            :selected.sync="selectedContractItems"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right" class="bg-white text-teal">
+          <q-btn flat label="Klaar" v-close-popup @click="processSelection" />
+          <q-btn flat label="Annuleren" color="danger" v-close-popup @click="processSelection" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <p
       v-if="!products.length"
     >Voeg artikelen toe met de barcode scanner door de QR code op het artikel te scannen.</p>
@@ -128,7 +154,6 @@
               @input="v => toggleReturnState(v, props.row.__index, 'QTYLOST')"
             />
           </q-td>
-          <!-- <q-td key="STKLEVEL" :props="props">{{ props.row.STKLEVEL }}</q-td> -->
           <q-td key="DELETE" :props="props">
             <q-icon
               name="delete"
@@ -159,7 +184,9 @@ export default {
   data() {
     return {
       products: this.$store.state.rentalProducts || [],
-      deleted: [],
+      contractItems: [],
+      selectedContractItems: [],
+      selectContractItems: false,
       itemnumber: null,
       code: "",
       reading: false,
@@ -245,21 +272,68 @@ export default {
           sortable: true,
           type: "rentalReturn"
         },
-        // {
-        //   name: "STKLEVEL",
-        //   required: true,
-        //   label: "Voorraad",
-        //   align: "left",
-        //   field: row => row.STKLEVEL,
-        //   format: val => `${val}`,
-        //   sortable: true
-        // },
         {
           name: "DELETE",
           required: true,
           label: "Verwijderen",
           align: "left",
           sortable: false
+        }
+      ],
+      itemColumns: [
+        {
+          name: "CONTNO",
+          required: true,
+          label: "Contractnummer",
+          align: "left",
+          field: row => row.CONTNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "ITEMNO",
+          required: true,
+          label: "Artikelnummer",
+          align: "left",
+          field: row => row.ITEMNO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "ITEMDESC",
+          required: true,
+          label: "Omschrijving",
+          align: "left",
+          field: row => row.ITEMDESC,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "MEMO",
+          required: true,
+          label: "Memo",
+          align: "left",
+          field: row => row.MEMO,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "HIRED",
+          required: true,
+          label: "Verhuurd",
+          align: "left",
+          field: row => row.HIRED,
+          format: val => `${val}`,
+          sortable: true
+        },
+        {
+          name: "QTYRETD",
+          required: true,
+          label: "Teruggebracht",
+          align: "left",
+          field: row => row.QTYRETD,
+          format: val => `${val}`,
+          sortable: true
         }
       ]
     };
@@ -333,7 +407,6 @@ export default {
     },
 
     deleteProduct: function(index) {
-      this.deleted.push(this.products[index]);
       this.products.splice(index, 1);
       this.$store.commit("updateRentalProducts", this.products);
     },
@@ -378,25 +451,10 @@ export default {
     async addProduct(found) {
       const p = this.products.find(p => p.RECID === found.RECID);
 
-      if (this.deleted.find(d => d.RECID === found.RECID)) {
-        return;
-      }
-
       if (!this.$store.state.offline && !p) {
         let result;
 
         try {
-          // this.$store.commit("updateLoaderState", true);
-          // result = await this.$api.get(
-          //   `${this.$config.api_base_url}stockdepots?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}' and CODE eq '${this.$store.state.user.DEPOT}'&fields=ITEMNO,STKLEVEL`
-          // );
-
-          // if (result && result.data && result.data.length) {
-          //   found.STKLEVEL = result.data[0].STKLEVEL;
-          // } else {
-          //   found.STKLEVEL = 0;
-          // }
-
           this.$store.commit("updateLoaderState", true);
           result = await this.$api.get(
             `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}'&fields=UNIQUE`
@@ -432,7 +490,7 @@ export default {
           Object.assign(found, {
             QTYDAM: 0,
             QTYLOST: 0,
-            QTYOK: found.UNIQUE ? 1 : 0
+            QTYOK: 1
           })
         );
       }
@@ -458,7 +516,28 @@ export default {
           `${baseURL}?api_key=${this.$store.state.api_key}&$orderby=ROWORDER desc&$filter=ITEMNO eq '${this.itemnumber}' and STATUS eq 1&fields=RECID,RECORDER,CONTNO,ITEMNO,ITEMDESC,MEMO,QTY,QTYRETD`
         );
 
-        if (res && res.data && res.data.length) {
+        if (!res || !res.data || !res.data.length) {
+          this.notifyNoContractItems();
+          eventHub.$emit("after-response");
+          this.$store.commit("updateLoaderState", false);
+          return;
+        }
+
+        if (res.data.length > 1) {
+          res.data.forEach(async item => {
+            item.DESC1 = item.ITEMDESC;
+            item.HIRED = item.QTY;
+            delete item.QTY;
+            this.contractItems.push(item);
+          });
+
+          this.selectContractItems = true;
+
+          eventHub.$emit("after-response");
+          this.$store.commit("updateLoaderState", false);
+
+          return;
+        } else {
           res.data.forEach(async item => {
             item.DESC1 = item.ITEMDESC;
             item.HIRED = item.QTY;
@@ -467,13 +546,32 @@ export default {
           });
 
           this.$store.commit("updateRentalProducts", this.products);
-        } else {
-          this.notifyNoContractItems();
         }
       } catch (e) {
         log.error(e);
         this.notifyNoContractItems();
       }
+
+      eventHub.$emit("after-response");
+      this.$store.commit("updateLoaderState", false);
+    },
+
+    async processSelection() {
+      if (!selectedContractItems.length) {
+        this.contractItems = [];
+        return;
+      }
+
+      this.$store.commit("updateLoaderState", true);
+      eventHub.$emit("before-request");
+
+      this.selectedContractItems.forEach(async item => {
+        await this.addProduct(item);
+      });
+
+      this.selectedContractItems = [];
+      this.contractItems = [];
+      this.$store.commit("updateRentalProducts", this.products);
 
       eventHub.$emit("after-response");
       this.$store.commit("updateLoaderState", false);
