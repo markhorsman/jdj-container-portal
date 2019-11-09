@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-    <q-dialog v-model="selectContractItems">
+    <q-dialog v-model="selectContractItems" full-width full-height>
       <q-card>
         <q-card-section>
           <div class="text-h6">Contract items</div>
@@ -14,7 +14,7 @@
             :data="contractItems"
             :columns="itemColumns"
             row-key="RECID"
-            selection="single"
+            selection="multiple"
             :selected.sync="selectedContractItems"
           />
         </q-card-section>
@@ -173,7 +173,7 @@ import os from "os";
 import { eventHub } from "../eventhub";
 import log from "electron-log";
 import { setTimeout } from "timers";
-import { findIndex } from "lodash";
+import { findIndex, clone } from "lodash";
 const ioHook = require("iohook");
 
 storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
@@ -190,6 +190,7 @@ export default {
       itemnumber: null,
       code: "",
       reading: false,
+      memo: null,
       columns: [
         {
           name: "CONTNO",
@@ -342,6 +343,10 @@ export default {
   mounted() {
     ioHook.on("keyup", this.getInput);
     ioHook.start();
+
+    if (this.$store.state.customer) {
+      this.memo = `${this.$store.state.customer.NAME} ${this.$store.state.customer.REFERENCE}`;
+    }
   },
 
   methods: {
@@ -448,27 +453,33 @@ export default {
       });
     },
 
+    async findProduct(itemno) {
+      let result;
+      try {
+        this.$store.commit("updateLoaderState", true);
+        result = await this.$api.get(
+          `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${itemno}'&fields=UNIQUE`
+        );
+
+        if (result && result.data && result.data.length) {
+          return result.data[0];
+        } else {
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Product met nummer ${itemno} niet gevonden.`
+          });
+          return;
+        }
+      } catch (e) {
+        log.error(e);
+      }
+
+      return null;
+    },
+
     async addProduct(found) {
       const p = this.products.find(p => p.RECID === found.RECID);
-
-      if (!this.$store.state.offline && !p) {
-        let result;
-
-        try {
-          this.$store.commit("updateLoaderState", true);
-          result = await this.$api.get(
-            `${this.$config.api_base_url}stock?api_key=${this.$store.state.api_key}&$filter=ITEMNO eq '${found.ITEMNO}'&fields=UNIQUE`
-          );
-
-          if (result && result.data && result.data.length) {
-            found.UNIQUE = result.data[0].UNIQUE;
-          } else {
-            return;
-          }
-        } catch (e) {
-          log.error(e);
-        }
-      }
 
       if (p && !p.UNIQUE) {
         if (
@@ -523,26 +534,76 @@ export default {
           return;
         }
 
-        if (res.data.length > 1) {
-          res.data.forEach(async item => {
+        const items = [];
+        const mismatches = [];
+
+        const p = await this.findProduct(res.data[0].ITEMNO);
+
+        eventHub.$emit("after-response");
+        this.$store.commit("updateLoaderState", false);
+        if (!p) return;
+
+        // find stock for each item
+        res.data.forEach(item => {
+          item.UNIQUE = p.UNIQUE;
+          // check if bulk, static contract and memo match
+          if (
+            this.$store.state.contract &&
+            !item.UNIQUE &&
+            item.MEMO !== this.memo
+          ) {
+            mismatches.push(item);
+          } else {
+            items.push(item);
+          }
+        });
+
+        if (mismatches.length && !items.length) {
+          this.$q.notify({
+            color: "red-5",
+            icon: "fas fa-exclamation-triangle",
+            message: `Product met nummer ${res.data[0].ITEMNO} en memo ${res.data[0].MEMO} niet in huur bij huidige klant.`
+          });
+        }
+
+        if (items.length > 1) {
+          // get current matching products
+          const matches = res.data.reduce((acc, item) => {
+            const p = this.products.find(p => p.RECID === item.RECID);
+            if (p) acc.push(p);
+            return acc;
+          }, []);
+
+          items.forEach(item => {
             item.DESC1 = item.ITEMDESC;
             item.HIRED = item.QTY;
             delete item.QTY;
-            this.contractItems.push(item);
+            if (
+              matches.length &&
+              this.products.find(p => p.RECID === item.RECID)
+            ) {
+              this.addProduct(item);
+            } else {
+              this.contractItems.push(item);
+            }
           });
 
-          this.selectContractItems = true;
+          if (!matches.length) {
+            this.selectContractItems = true;
+          } else {
+            this.$store.commit("updateRentalProducts", this.products);
+          }
 
           eventHub.$emit("after-response");
           this.$store.commit("updateLoaderState", false);
 
           return;
         } else {
-          res.data.forEach(async item => {
+          items.forEach(item => {
             item.DESC1 = item.ITEMDESC;
             item.HIRED = item.QTY;
             delete item.QTY;
-            await this.addProduct(item);
+            this.addProduct(item);
           });
 
           this.$store.commit("updateRentalProducts", this.products);
@@ -557,7 +618,7 @@ export default {
     },
 
     async processSelection() {
-      if (!selectedContractItems.length) {
+      if (!this.selectedContractItems.length) {
         this.contractItems = [];
         return;
       }
@@ -566,7 +627,8 @@ export default {
       eventHub.$emit("before-request");
 
       this.selectedContractItems.forEach(async item => {
-        await this.addProduct(item);
+        const p = clone(item);
+        await this.addProduct(p);
       });
 
       this.selectedContractItems = [];
