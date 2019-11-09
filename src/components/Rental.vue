@@ -161,12 +161,12 @@ export default {
   },
 
   mounted() {
-    if (this.$store.state.settings.contract.static) {
-      this.$store.commit(
-        "updateContract",
-        this.$store.state.settings.contract.number
-      );
-    }
+    this.$store.commit(
+      "updateContract",
+      this.$store.state.settings.contract.static
+        ? this.$store.state.settings.contract.number
+        : null
+    );
     this.rentalTypeChanged(this.rentalType);
     this.genRentalQueueOptions();
   },
