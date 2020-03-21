@@ -74,8 +74,6 @@ storage.setDataPath(`${os.tmpdir()}/insphire/stock`);
 export default {
   name: "ReadProduct",
 
-  props: ["title", "isOffhire"],
-
   data() {
     return {
       products: this.$store.state.rentalProducts || [],

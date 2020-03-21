@@ -161,12 +161,12 @@ export default {
   },
 
   mounted() {
-    if (this.$store.state.settings.contract.static) {
-      this.$store.commit(
-        "updateContract",
-        this.$store.state.settings.contract.number
-      );
-    }
+    this.$store.commit(
+      "updateContract",
+      this.$store.state.settings.contract.static
+        ? this.$store.state.settings.contract.number
+        : null
+    );
     this.rentalTypeChanged(this.rentalType);
     this.genRentalQueueOptions();
   },
@@ -236,15 +236,6 @@ export default {
           format: val => `${val}`,
           sortable: true,
           type: "return"
-        },
-        {
-          name: "STKLEVEL",
-          required: true,
-          label: "Voorraad",
-          align: "left",
-          field: row => row.STKLEVEL,
-          format: val => `${val}`,
-          sortable: true
         }
       ]
     };
@@ -388,7 +379,7 @@ export default {
         result = await this.$api.post(
           `${this.$config.container_api_base_url}offhire`,
           {
-            CONTNO: contno,
+            CONTNO: item.CONTNO,
             ITEMNO: item.ITEMNO,
             CONTITEM_RECORDER: item.RECORDER,
             CONTITEM_RECID: item.RECID,

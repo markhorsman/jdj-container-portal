@@ -65,10 +65,12 @@
           use-input
           hide-selected
           fill-input
+          clearable
           input-debounce="0"
           :options="contractOptions"
           @filter="filterContracts"
           @input="updateContract"
+          @clear="updateContract"
           label="Contract"
         >
           <template v-slot:no-option>
@@ -133,7 +135,7 @@
               v-model="props.row.MEMO"
               buttons
               @show="() => editMemo = props.row.__index"
-              @hide="() => editMemo = false"
+              @hide="() => editMemo = null"
               @save="(value, initialValue) => updateMemo(props.row.__index, value, initialValue)"
             >
               <q-input v-model="props.row.MEMO" autofocus readonly />
@@ -150,7 +152,7 @@
 <script>
 import { NFC } from "nfc-pcsc";
 import { eventHub } from "../eventhub";
-import { get } from "lodash";
+import { get, isNull } from "lodash";
 import { emailContractItems } from "../mailer";
 import { getAllContracts } from "../contracts";
 import printJS from "print-js";
@@ -255,7 +257,7 @@ export default {
       genList: false,
       chooseEmail: false,
       emailaddress: this.$config.email.default_email,
-      editMemo: false,
+      editMemo: null,
       exportWithFilter: true,
       exportMax: 2000
     };
@@ -306,7 +308,7 @@ export default {
 
         if (!customer) return;
 
-        if (this.editMemo) {
+        if (!isNull(this.editMemo)) {
           this.tableData[this.editMemo].MEMO = `${customer.NAME} ${this.uid}`;
         } else {
           this.filter = customer.NAME;
@@ -577,7 +579,8 @@ export default {
     },
 
     updateContract(v) {
-      this.contract = v.value;
+      if (!v) this.contract = null;
+      else this.contract = v.value;
       this.onRequest({
         pagination: this.pagination,
         filter: this.filter
