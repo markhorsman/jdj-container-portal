@@ -92,7 +92,11 @@
           />
 
           <q-toolbar-title class="pull-right">
-            <img alt="J de Jonge" width="200" src="../public/logo.png" />
+            <img
+              alt="J de Jonge"
+              width="200"
+              :src="require(`@/assets/${(this.$config.is_demo ? 'placeholder' : 'logo')}.png`)"
+            />
           </q-toolbar-title>
           <div>
             <span>{{ networkStatus }}</span>
